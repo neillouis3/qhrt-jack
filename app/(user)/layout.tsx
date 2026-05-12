@@ -63,9 +63,7 @@ export default function UserLayout({
             </a>
           </div>
         </header>
-        <main className="flex flex-1 w-full">
-          {children}
-        </main>
+        <main className="flex flex-1 w-full">{children}</main>
       </body>
     </html>
   );
