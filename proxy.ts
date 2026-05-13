@@ -1,14 +1,19 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Check for session cookie
   const sessionCookie = request.cookies.get('sb-auth-token')?.value;
 
-  // Protect /admin routes
-  if (pathname.startsWith('/admin')) {
+  // Protect /dashboard, /content (admin), /home, /sessions (user) routes
+  if (
+    pathname.startsWith('/dashboard') ||
+    pathname.startsWith('/content') ||
+    pathname.startsWith('/home') ||
+    pathname.startsWith('/sessions')
+  ) {
     if (!sessionCookie) {
       return NextResponse.redirect(new URL('/auth/login', request.url));
     }
@@ -20,5 +25,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/admin/:path*'],
+  matcher: ['/dashboard/:path*', '/content/:path*', '/home/:path*', '/sessions/:path*'],
 };
