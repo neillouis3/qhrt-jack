@@ -14,7 +14,7 @@ export default function LoginPage() {
       try {
         const response = await fetch('/api/auth/session');
         if (response.ok) {
-          router.push('/user/home');
+          router.push('/home');
         }
       } catch {
         // Not logged in, show login page
@@ -24,7 +24,7 @@ export default function LoginPage() {
   }, [router]);
 
   const handleSuccess = () => {
-    router.push('/user/home');
+    router.push('/home');
   };
 
   return (
