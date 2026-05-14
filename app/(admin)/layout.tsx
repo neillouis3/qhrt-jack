@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
-import NavbarLayout from '@/components/NavbarLayout';
-import { NavItem } from '@/components/Navbar';
+import { NavItem } from '@/components/NavbarContext';
+import NavbarProvider from '@/components/NavbarProvider';
 
 export const metadata: Metadata = {
   title: {
@@ -20,5 +20,5 @@ export default function AdminLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  return <NavbarLayout adminLinks={adminLinks}>{children}</NavbarLayout>;
+  return <NavbarProvider value={{ adminLinks }}>{children}</NavbarProvider>;
 }

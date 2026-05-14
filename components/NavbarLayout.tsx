@@ -4,18 +4,14 @@ import { useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Navbar, { NavItem } from '@/components/Navbar';
 import UserMenu from '@/components/UserMenu';
+import { useNavbarLinks } from '@/components/NavbarProvider';
 
 interface NavbarLayoutProps {
   children: React.ReactNode;
-  adminLinks?: NavItem[];
-  userLinks?: NavItem[];
 }
 
-export default function NavbarLayout({
-  children,
-  adminLinks = [],
-  userLinks = [],
-}: NavbarLayoutProps) {
+export default function NavbarLayout({ children }: NavbarLayoutProps) {
+  const { adminLinks: ctxAdminLinks, userLinks: ctxUserLinks } = useNavbarLinks();
   const router = useRouter();
   const pathname = usePathname();
   const [user, setUser] = useState<{ name: string; email: string; role: string } | null>(null);
@@ -60,8 +56,8 @@ export default function NavbarLayout({
   // Auth pages have their own layout, don't wrap them
   if (isAuthRoute) return <>{children}</>;
 
-  // Determine which links to show based on user role
-  const links = user?.role === 'admin' ? adminLinks : isUserRoute ? userLinks : [];
+  // Determine which links to show based on user role and context
+  const links = (user?.role === 'admin' ? ctxAdminLinks : isUserRoute ? ctxUserLinks : []) ?? [];
 
   const rightContent = loading ? (
     <div className="w-20 h-8 animate-pulse rounded-full bg-zinc-200 dark:bg-zinc-700" />
