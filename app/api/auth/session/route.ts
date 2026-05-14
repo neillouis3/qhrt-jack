@@ -16,7 +16,12 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid session' }, { status: 401 });
     }
 
-    return NextResponse.json({ user: data.session.user }, { status: 200 });
+    const user = data.session.user;
+
+    // Extract role from user_metadata (default to 'user' if not set)
+    const role = (user.user_metadata?.role as string) ?? 'user';
+
+    return NextResponse.json({ user: { ...user, role } }, { status: 200 });
   } catch (error) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }

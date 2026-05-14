@@ -18,7 +18,7 @@ export default function NavbarLayout({
 }: NavbarLayoutProps) {
   const router = useRouter();
   const pathname = usePathname();
-  const [user, setUser] = useState<{ name: string; email: string } | null>(null);
+  const [user, setUser] = useState<{ name: string; email: string; role: string } | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -27,7 +27,11 @@ export default function NavbarLayout({
         const res = await fetch('/api/auth/session');
         if (res.ok) {
           const data = await res.json();
-          setUser({ name: data.user.email ?? 'User', email: data.user.email ?? '' });
+          setUser({
+            name: data.user.email ?? 'User',
+            email: data.user.email ?? '',
+            role: data.user.role ?? 'user',
+          });
         }
       } catch {
         /* not logged in */
@@ -56,7 +60,8 @@ export default function NavbarLayout({
   // Auth pages have their own layout, don't wrap them
   if (isAuthRoute) return <>{children}</>;
 
-  const links = isAdminRoute ? adminLinks : isUserRoute ? userLinks : [];
+  // Determine which links to show based on user role
+  const links = user?.role === 'admin' ? adminLinks : isUserRoute ? userLinks : [];
 
   const rightContent = loading ? (
     <div className="w-20 h-8 animate-pulse rounded-full bg-zinc-200 dark:bg-zinc-700" />

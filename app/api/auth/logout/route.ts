@@ -8,6 +8,7 @@ export async function POST(request: NextRequest) {
 
     const response = NextResponse.json({ message: 'Logged out successfully' }, { status: 200 });
     response.cookies.delete('sb-auth-token');
+    response.cookies.delete('sb-user-role');
 
     return response;
   } catch (error) {

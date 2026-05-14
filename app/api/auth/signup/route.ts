@@ -13,6 +13,11 @@ export async function POST(request: NextRequest) {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
+      options: {
+        data: {
+          role: 'user',
+        },
+      },
     });
 
     if (error) {

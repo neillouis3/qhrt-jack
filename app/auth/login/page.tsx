@@ -7,6 +7,7 @@ import LoginForm from '@/components/LoginForm';
 export default function LoginPage() {
   const router = useRouter();
   const [mode, setMode] = useState<'login' | 'signup'>('login');
+  const [checking, setChecking] = useState(true);
 
   useEffect(() => {
     // Check if user is already logged in
@@ -14,18 +15,44 @@ export default function LoginPage() {
       try {
         const response = await fetch('/api/auth/session');
         if (response.ok) {
-          router.push('/home');
+          const data = await response.json();
+          const role = data.user?.role ?? 'user';
+          // Admin users go to dashboard, regular users go to home
+          router.push(role === 'admin' ? '/dashboard' : '/home');
+          return;
         }
       } catch {
         // Not logged in, show login page
+      } finally {
+        setChecking(false);
       }
     };
     checkSession();
   }, [router]);
 
-  const handleSuccess = () => {
+  const handleSuccess = async () => {
+    // Check the user's role to determine where to redirect
+    try {
+      const response = await fetch('/api/auth/session');
+      if (response.ok) {
+        const data = await response.json();
+        const role = data.user?.role ?? 'user';
+        router.push(role === 'admin' ? '/dashboard' : '/home');
+        return;
+      }
+    } catch {
+      // Fallback to home on error
+    }
     router.push('/home');
   };
+
+  if (checking) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center bg-gray-50 dark:bg-gray-900">
+        <p className="text-sm text-gray-600 dark:text-gray-400">Checking session...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-gray-50 dark:bg-gray-900">

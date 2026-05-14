@@ -20,8 +20,15 @@ export async function POST(request: NextRequest) {
     }
 
     // Set session cookie
+    const role = data.user?.user_metadata?.role ?? 'user';
     const response = NextResponse.json({ user: data.user }, { status: 200 });
     response.cookies.set('sb-auth-token', data.session?.access_token || '', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+    });
+    response.cookies.set('sb-user-role', role, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
