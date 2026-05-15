@@ -1,6 +1,16 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.SUPABASE_URL!;
-const supabasePublishableKey = process.env.SUPABASE_PUBLISHABLE_KEY!;
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const supabasePublishableKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!;
 
+// Client-side Supabase client (used in browser / client components)
 export const supabase = createClient(supabaseUrl, supabasePublishableKey);
+
+// Server-side Supabase client (used in API routes / server components)
+const supabaseSecretKey = process.env.SUPABASE_SECRET_KEY!;
+export const supabaseServer = createClient(supabaseUrl, supabaseSecretKey, {
+  auth: {
+    autoRefreshToken: false,
+    persistSession: false,
+  },
+});

@@ -1,10 +1,15 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { supabase } from '@/lib/supabaseClient';
+import { supabaseServer } from '@/lib/supabaseClient';
 
 export async function POST(request: NextRequest) {
   try {
-    await supabase.auth.signOut();
+    const sessionCookie = request.cookies.get('sb-auth-token')?.value;
+    if (sessionCookie) {
+      await supabaseServer.auth.signOut({
+        scope: 'global',
+      });
+    }
 
     const response = NextResponse.json({ message: 'Logged out successfully' }, { status: 200 });
     response.cookies.delete('sb-auth-token');
