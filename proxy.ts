@@ -1,35 +1,105 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { createServerClient } from '@supabase/ssr';
+import { supabaseServer } from '@/lib/supabaseClient';
 
-export function proxy(request: NextRequest) {
+export async function proxy(request: NextRequest) {
+  // Skip API routes - they handle their own auth
+  if (request.nextUrl.pathname.startsWith('/api/')) {
+    return NextResponse.next();
+  }
+
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll().map((cookie) => ({
+            name: cookie.name,
+            value: cookie.value,
+          }));
+        },
+        setAll(cookies) {
+          // No-op in proxy — cookies are read-only here
+        },
+      },
+    }
+  );
+
+  // Verify the user's session via Supabase JWT (server-side)
+  const {
+    data: { user },
+    error,
+  } = await supabase.auth.getUser();
+
   const { pathname } = request.nextUrl;
+  const isAdminRoute = pathname.startsWith('/dashboard') || pathname.startsWith('/content');
+  const isUserRoute = pathname.startsWith('/home') || pathname.startsWith('/sessions');
+  const isAuthRoute = pathname.startsWith('/auth');
 
-  // Get user role from cookie (set during login)
-  const role = request.cookies.get('sb-user-role')?.value;
-  const isAuthenticated = !!request.cookies.get('sb-auth-token')?.value;
-
-  // Admin routes: require admin role
-  if (pathname.startsWith('/dashboard') || pathname.startsWith('/content')) {
-    if (!isAuthenticated) {
+  // Protect admin routes
+  if (isAdminRoute) {
+    if (error || !user) {
       return NextResponse.redirect(new URL('/auth/login', request.url));
     }
-    if (role !== 'admin') {
-      // Non-admin users get redirected to their home page
+
+    // Fetch role from public.user_roles table (server-side verified)
+    const { data: roleData, error: roleError } = await supabaseServer
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', user.id)
+      .single();
+
+    if (roleError || !roleData?.role || roleData.role !== 'admin') {
       return NextResponse.redirect(new URL('/home', request.url));
     }
   }
 
-  // User routes: require authentication (any authenticated user can access)
-  if (pathname.startsWith('/home') || pathname.startsWith('/sessions')) {
-    if (!isAuthenticated) {
+  // Protect user routes
+  if (isUserRoute) {
+    if (error || !user) {
       return NextResponse.redirect(new URL('/auth/login', request.url));
     }
-    // Authenticated users (both admin and user roles) can access user routes
+
+    // Admins get redirected to dashboard
+    const { data: roleData } = await supabaseServer
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', user.id)
+      .single();
+
+    if (roleData?.role === 'admin') {
+      return NextResponse.redirect(new URL('/dashboard', request.url));
+    }
+  }
+
+  // Redirect authenticated users away from auth pages
+  if (isAuthRoute && !error && user) {
+    const { data: roleData } = await supabaseServer
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', user.id)
+      .single();
+
+    const role = roleData?.role ?? 'user';
+    const redirectUrl = role === 'admin' ? '/dashboard' : '/home';
+    return NextResponse.redirect(new URL(redirectUrl, request.url));
   }
 
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: ['/dashboard/:path*', '/content/:path*', '/home/:path*', '/sessions/:path*'],
+  matcher: [
+    '/((?!api|_next/static|_next/image).*)',
+    '/dashboard/:path*',
+    '/content/:path*',
+    '/home/:path*',
+    '/sessions/:path*',
+    '/auth/:path*',
+  ],
 };
+
+// Alias for backwards compatibility just in case because middleware convention is now deprecated.
+export const middleware = proxy;

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { createServerClient } from '@supabase/ssr';
 import { supabaseServer } from '@/lib/supabaseClient';
 
 export async function POST(request: NextRequest) {
@@ -10,21 +11,48 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Email and password are required' }, { status: 400 });
     }
 
-    const { data, error } = await supabaseServer.auth.signUp({
+    // Create a response object to hold cookies and headers
+    let response = NextResponse.json({});
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return request.cookies.getAll().map((cookie) => ({
+              name: cookie.name,
+              value: cookie.value,
+            }));
+          },
+          setAll(cookies) {
+            cookies.forEach((cookie) => {
+              response.cookies.set({ name: cookie.name, value: cookie.value, ...cookie.options });
+            });
+          },
+        },
+      }
+    );
+
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      options: {
-        data: {
-          role: 'user',
-        },
-      },
     });
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
 
-    return NextResponse.json({ user: data.user }, { status: 201 });
+    // Insert the user's role into the public.user_roles table
+    // Default new signups to 'user' role
+    if (data.user?.id) {
+      await supabaseServer
+        .from('user_roles')
+        .insert({ user_id: data.user.id, role: 'user' })
+        .select()
+        .single();
+    }
+
+    return NextResponse.json({ user: data.user }, { status: 201, headers: response.headers });
   } catch (error) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }

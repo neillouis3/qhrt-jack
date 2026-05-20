@@ -1,21 +1,38 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { supabaseServer } from '@/lib/supabaseClient';
+import { createServerClient } from '@supabase/ssr';
 
 export async function POST(request: NextRequest) {
   try {
-    const sessionCookie = request.cookies.get('sb-auth-token')?.value;
-    if (sessionCookie) {
-      await supabaseServer.auth.signOut({
-        scope: 'global',
-      });
-    }
+    // Create a response object to hold cookies and headers
+    let response = NextResponse.json({});
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return request.cookies.getAll().map((cookie) => ({
+              name: cookie.name,
+              value: cookie.value,
+            }));
+          },
+          setAll(cookies) {
+            cookies.forEach((cookie) => {
+              response.cookies.set({ name: cookie.name, value: cookie.value, ...cookie.options });
+            });
+          },
+        },
+      }
+    );
 
-    const response = NextResponse.json({ message: 'Logged out successfully' }, { status: 200 });
-    response.cookies.delete('sb-auth-token');
-    response.cookies.delete('sb-user-role');
+    // Sign out via Supabase (clears session cookies)
+    await supabase.auth.signOut();
 
-    return response;
+    return NextResponse.json(
+      { message: 'Logged out successfully' },
+      { status: 200, headers: response.headers }
+    );
   } catch (error) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }

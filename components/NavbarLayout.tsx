@@ -57,7 +57,14 @@ export default function NavbarLayout({ children }: NavbarLayoutProps) {
   if (isAuthRoute) return <>{children}</>;
 
   // Determine which links to show based on user role and context
-  const links = (user?.role === 'admin' ? ctxAdminLinks : isUserRoute ? ctxUserLinks : []) ?? [];
+  let links: NavItem[] = [];
+  if (user?.role === 'admin') {
+    links = ctxAdminLinks ?? [];
+  } else if (user) {
+    links = ctxUserLinks ?? [];
+  } else if (isUserRoute) {
+    links = ctxUserLinks ?? [];
+  }
 
   const rightContent = loading ? (
     <div className="w-20 h-8 animate-pulse rounded-full bg-zinc-200 dark:bg-zinc-700" />
