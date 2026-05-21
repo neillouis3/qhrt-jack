@@ -19,6 +19,7 @@ export default function NavbarLayout({ children }: NavbarLayoutProps) {
 
   useEffect(() => {
     const checkSession = async () => {
+      if (user !== null) return; // already fetched
       try {
         const res = await fetch('/api/auth/session');
         if (res.ok) {
@@ -36,7 +37,7 @@ export default function NavbarLayout({ children }: NavbarLayoutProps) {
       }
     };
     checkSession();
-  }, []);
+  }, [user, pathname]);
 
   const handleLogout = async () => {
     try {
