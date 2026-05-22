@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Navbar, { NavItem } from '@/components/Navbar';
 import UserMenu from '@/components/UserMenu';
+import SettingsModal from '@/components/SettingsModal';
 import { useNavbarLinks } from '@/components/NavbarProvider';
 
 interface NavbarLayoutProps {
@@ -16,6 +17,7 @@ export default function NavbarLayout({ children }: NavbarLayoutProps) {
   const pathname = usePathname();
   const [user, setUser] = useState<{ name: string; email: string; role: string } | null>(null);
   const [loading, setLoading] = useState(true);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   useEffect(() => {
     const checkSession = async () => {
@@ -72,7 +74,7 @@ export default function NavbarLayout({ children }: NavbarLayoutProps) {
   ) : user ? (
     <UserMenu
       items={[
-        { label: 'Settings', onClick: () => {} },
+        { label: 'Settings', onClick: () => setSettingsOpen(true) },
         { label: 'Log out', onClick: handleLogout, danger: true },
       ]}
       initialEmail={user.email}
@@ -98,6 +100,7 @@ export default function NavbarLayout({ children }: NavbarLayoutProps) {
     <div className="min-h-screen flex flex-col">
       <Navbar logo="QHRT" logoHref="/" links={links} rightContent={rightContent} />
       <main className="flex flex-1 w-full">{children}</main>
+      <SettingsModal isOpen={settingsOpen} onClose={() => setSettingsOpen(false)} />
     </div>
   );
 }
