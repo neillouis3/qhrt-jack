@@ -27,7 +27,7 @@ export default function NavbarLayout({ children }: NavbarLayoutProps) {
           setUser({
             name: data.user.email ?? 'User',
             email: data.user.email ?? '',
-            role: data.user.role ?? 'user',
+            role: data.role ?? 'user',
           });
         }
       } catch {
