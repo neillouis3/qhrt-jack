@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useState, useRef, useEffect } from 'react';
+import useNavigationGuard from '@/hooks/useNavigationGuard';
 
 export interface NavItem {
   name: string;
@@ -23,12 +23,16 @@ export default function Navbar({
   rightContent,
 }: NavbarProps) {
   const pathname = usePathname();
+  const navigate = useNavigationGuard();
 
   return (
     <header className="bg-white dark:bg-zinc-900 flex translate-z-0 z-1000 flex-row justify-between items-center w-full ring-1 ring-zinc-200 dark:ring-zinc-800 px-6 py-3 sticky top-0">
       <div className="flex items-center gap-6">
         <Link
           href={logoHref}
+          onClick={(e) => {
+            if (!navigate(logoHref)) e.preventDefault();
+          }}
           className="text-lg font-bold text-zinc-900 dark:text-zinc-100 hover:opacity-80 transition-opacity"
         >
           {logo}
@@ -40,6 +44,9 @@ export default function Navbar({
               <Link
                 key={link.path}
                 href={link.path}
+                onClick={(e) => {
+                  if (!navigate(link.path)) e.preventDefault();
+                }}
                 className={`
                   px-3 py-1.5 rounded-md text-sm font-medium transition-colors
                   ${
