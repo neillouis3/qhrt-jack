@@ -7,10 +7,13 @@ const supabasePublishableKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!
 export const supabase = createClient(supabaseUrl, supabasePublishableKey);
 
 // Server-side Supabase client (used in API routes / server components)
-const supabaseSecretKey = process.env.SUPABASE_SECRET_KEY!;
-export const supabaseServer = createClient(supabaseUrl, supabaseSecretKey, {
-  auth: {
-    autoRefreshToken: false,
-    persistSession: false,
-  },
-});
+// Guarded so it doesn't throw when the module is evaluated in the browser
+const supabaseSecretKey = process.env.SUPABASE_SECRET_KEY;
+export const supabaseServer = supabaseSecretKey
+  ? createClient(supabaseUrl, supabaseSecretKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
+    })
+  : (null as any);

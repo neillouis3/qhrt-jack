@@ -26,14 +26,14 @@ export default function Navbar({
   const navigate = useNavigationGuard();
 
   return (
-    <header className="bg-white dark:bg-zinc-900 flex translate-z-0 z-1000 flex-row justify-between items-center w-full ring-1 ring-zinc-200 dark:ring-zinc-800 px-6 py-3 sticky top-0">
+    <header className="bg-white dark:bg-navy flex translate-z-0 z-1000 flex-row justify-between items-center w-full ring-1 ring-border px-6 py-3 sticky top-0">
       <div className="flex items-center gap-6">
         <Link
           href={logoHref}
           onClick={(e) => {
             if (!navigate(logoHref)) e.preventDefault();
           }}
-          className="text-lg font-bold text-zinc-900 dark:text-zinc-100 hover:opacity-80 transition-opacity"
+          className="text-lg font-bold text-navy dark:text-white hover:opacity-80 transition-opacity"
         >
           {logo}
         </Link>
@@ -51,8 +51,8 @@ export default function Navbar({
                   px-3 py-1.5 rounded-md text-sm font-medium transition-colors
                   ${
                     isActive
-                      ? 'bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100'
-                      : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-800/50'
+                      ? 'bg-accent-lighter dark:bg-primary/10 text-primary dark:text-primary-light'
+                      : 'text-muted hover:text-navy dark:hover:text-white hover:bg-muted/5 dark:hover:bg-navy-light/20'
                   }
                 `}
               >

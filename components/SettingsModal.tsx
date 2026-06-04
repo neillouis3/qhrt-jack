@@ -13,27 +13,23 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
       <div className="space-y-6">
         {/* Profile Section */}
         <div>
-          <h3 className="text-sm font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-3">
-            Profile
-          </h3>
+          <h3 className="text-sm font-medium text-muted uppercase tracking-wider mb-3">Profile</h3>
           <div className="space-y-3">
             <div>
-              <label className="block text-sm text-zinc-600 dark:text-zinc-400 mb-1">
-                Display Name
-              </label>
+              <label className="block text-sm text-muted mb-1">Display Name</label>
               <input
                 type="text"
                 placeholder="Your name"
-                className="w-full px-3 py-2 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:focus:border-primary-light"
               />
             </div>
             <div>
-              <label className="block text-sm text-zinc-600 dark:text-zinc-400 mb-1">Email</label>
+              <label className="block text-sm text-muted mb-1">Email</label>
               <input
                 type="email"
                 placeholder="you@example.com"
                 disabled
-                className="w-full px-3 py-2 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800/50 text-zinc-500 dark:text-zinc-500 text-sm cursor-not-allowed"
+                className="w-full px-3 py-2 rounded-lg border border-border bg-muted/10 text-muted text-sm cursor-not-allowed dark:bg-navy-light/20"
               />
             </div>
           </div>
@@ -41,15 +37,15 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 
         {/* Appearance Section */}
         <div>
-          <h3 className="text-sm font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-3">
+          <h3 className="text-sm font-medium text-muted uppercase tracking-wider mb-3">
             Appearance
           </h3>
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-sm text-zinc-700 dark:text-zinc-300">Dark Mode</span>
+              <span className="text-sm text-foreground dark:text-muted">Dark Mode</span>
               <button
                 type="button"
-                className="relative w-11 h-6 rounded-full bg-zinc-200 dark:bg-indigo-600 transition-colors"
+                className="relative w-11 h-6 rounded-full bg-border dark:bg-primary transition-colors"
                 role="switch"
                 aria-checked="false"
               >
@@ -63,11 +59,11 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
         <div className="flex justify-end gap-3 pt-2">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-sm font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
+            className="px-4 py-2 text-sm font-medium text-foreground hover:bg-muted/5 dark:hover:bg-navy-light/20 rounded-lg transition-colors"
           >
             Cancel
           </button>
-          <button className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors">
+          <button className="px-4 py-2 text-sm font-medium text-white bg-primary hover:bg-primary-dark rounded-lg transition-colors dark:bg-primary-light dark:hover:bg-primary">
             Save Changes
           </button>
         </div>

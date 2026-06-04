@@ -45,7 +45,7 @@ export default function NavbarLayout({ children }: NavbarLayoutProps) {
     try {
       await fetch('/api/auth/logout', { method: 'POST' });
       setUser(null);
-      router.push('/auth/login');
+      router.push('/');
     } catch {
       /* handle error */
     }
@@ -70,7 +70,7 @@ export default function NavbarLayout({ children }: NavbarLayoutProps) {
   }
 
   const rightContent = loading ? (
-    <div className="w-20 h-8 animate-pulse rounded-full bg-zinc-200 dark:bg-zinc-700" />
+    <div className="w-20 h-8 animate-pulse rounded-full bg-accent-lighter dark:bg-navy-light" />
   ) : user ? (
     <UserMenu
       items={[
@@ -83,13 +83,13 @@ export default function NavbarLayout({ children }: NavbarLayoutProps) {
     <div className="flex items-center gap-2">
       <a
         href="/auth/login"
-        className="px-3 py-1.5 text-sm font-medium text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors"
+        className="px-3 py-1.5 text-sm font-medium text-muted hover:text-navy dark:hover:text-white transition-colors"
       >
         Log in
       </a>
       <a
         href="/auth/login"
-        className="px-3 py-1.5 text-sm font-medium rounded-md bg-indigo-600 text-white hover:bg-indigo-700 transition-colors"
+        className="px-3 py-1.5 text-sm font-medium rounded-md bg-primary text-white hover:bg-primary-dark transition-colors dark:bg-primary-light dark:hover:bg-primary"
       >
         Sign up
       </a>

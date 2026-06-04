@@ -48,24 +48,24 @@ export default function LoginPage() {
 
   if (checking) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-gray-50 dark:bg-gray-900">
-        <p className="text-sm text-gray-600 dark:text-gray-400">Checking session...</p>
+      <div className="flex min-h-screen flex-col items-center justify-center bg-background">
+        <p className="text-sm text-muted">Checking session...</p>
       </div>
     );
   }
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-gray-50 dark:bg-gray-900">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-background">
       <div className="w-full max-w-md space-y-8 px-4 py-12">
         <div className="text-center">
-          <h1 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white">
+          <h1 className="text-3xl font-bold tracking-tight text-foreground dark:text-white">
             {mode === 'login' ? 'Sign in to your account' : 'Create an account'}
           </h1>
-          <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+          <p className="mt-2 text-sm text-muted">
             {mode === 'login' ? "Don't have an account? " : 'Already have an account? '}
             <button
               onClick={() => setMode(mode === 'login' ? 'signup' : 'login')}
-              className="font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400"
+              className="font-medium text-primary hover:text-primary-dark dark:text-primary-light"
             >
               {mode === 'login' ? 'Sign up' : 'Sign in'}
             </button>

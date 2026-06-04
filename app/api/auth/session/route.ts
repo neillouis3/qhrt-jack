@@ -42,7 +42,19 @@ export async function GET(request: NextRequest) {
       role = roleData.role;
     }
 
-    return NextResponse.json({ user: { ...user }, role }, { status: 200 });
+    // Fetch intake status (bypass RLS with server client)
+    let intakeCompleted = false;
+    const { data: progressData, error: progressError } = await supabaseServer
+      .from('user_progress')
+      .select('intake_completed')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    if (!progressError && progressData?.intake_completed) {
+      intakeCompleted = true;
+    }
+
+    return NextResponse.json({ user: { ...user }, role, intakeCompleted }, { status: 200 });
   } catch (error) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }

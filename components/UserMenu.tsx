@@ -36,14 +36,14 @@ export default function UserMenu({ items, initialName, initialEmail }: UserMenuP
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen(!open)}
-        className="flex items-center gap-2 rounded-full border border-zinc-200 dark:border-zinc-700 px-3 py-1.5 text-sm hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
+        className="flex items-center gap-2 rounded-full border border-border px-3 py-1.5 text-sm text-foreground hover:bg-muted/5 dark:hover:bg-navy-light/20 transition-colors"
       >
-        <div className="w-6 h-6 rounded-full bg-indigo-500 flex items-center justify-center text-white text-xs font-medium">
+        <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center text-white text-xs font-medium dark:bg-primary-light">
           {displayName.charAt(0).toUpperCase()}
         </div>
-        <span className="text-zinc-700 dark:text-zinc-300 hidden sm:inline">{displayName}</span>
+        <span className="text-foreground dark:text-muted hidden sm:inline">{displayName}</span>
         <svg
-          className={`w-4 h-4 text-zinc-500 transition-transform ${open ? 'rotate-180' : ''}`}
+          className={`w-4 h-4 text-muted transition-transform ${open ? 'rotate-180' : ''}`}
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -54,7 +54,7 @@ export default function UserMenu({ items, initialName, initialEmail }: UserMenuP
       </button>
 
       {open && (
-        <div className="absolute right-0 mt-1 w-48 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 shadow-lg py-1 z-50">
+        <div className="absolute right-0 mt-1 w-48 rounded-lg border border-border bg-background shadow-lg py-1 z-50">
           {items.map((item, i) => (
             <button
               key={i}
@@ -67,7 +67,7 @@ export default function UserMenu({ items, initialName, initialEmail }: UserMenuP
                 ${
                   item.danger
                     ? 'text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20'
-                    : 'text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800'
+                    : 'text-foreground hover:bg-muted/5 dark:hover:bg-navy-light/20'
                 }
               `}
             >

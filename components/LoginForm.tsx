@@ -46,7 +46,7 @@ export default function LoginForm({ mode, onSuccess }: LoginFormProps) {
       <div>
         <label
           htmlFor="email"
-          className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+          className="block text-sm font-medium text-foreground dark:text-muted"
         >
           Email
         </label>
@@ -56,14 +56,14 @@ export default function LoginForm({ mode, onSuccess }: LoginFormProps) {
           required
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-800 dark:text-white focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          className="mt-1 block w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground dark:border-navy-light dark:bg-navy dark:text-white focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary dark:focus:border-primary-light"
           placeholder="you@example.com"
         />
       </div>
       <div>
         <label
           htmlFor="password"
-          className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+          className="block text-sm font-medium text-foreground dark:text-muted"
         >
           Password
         </label>
@@ -73,7 +73,7 @@ export default function LoginForm({ mode, onSuccess }: LoginFormProps) {
           required
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-800 dark:text-white focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          className="mt-1 block w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground dark:border-navy-light dark:bg-navy dark:text-white focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary dark:focus:border-primary-light"
           placeholder="••••••••"
         />
       </div>
@@ -81,7 +81,7 @@ export default function LoginForm({ mode, onSuccess }: LoginFormProps) {
       <button
         type="submit"
         disabled={loading}
-        className="w-full rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50"
+        className="w-full rounded-md bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 dark:bg-primary-light dark:hover:bg-primary disabled:opacity-50"
       >
         {loading ? 'Processing...' : mode === 'login' ? 'Sign In' : 'Sign Up'}
       </button>

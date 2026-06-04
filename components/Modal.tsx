@@ -48,18 +48,18 @@ export default function Modal({ isOpen, onClose, title, children, size = 'md' }:
 
       {/* Modal content */}
       <div
-        className={`relative w-full ${sizeClasses[size]} mx-4 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 shadow-2xl animate-in fade-in zoom-in-95 duration-200`}
+        className={`relative w-full ${sizeClasses[size]} mx-4 rounded-xl bg-background border border-border shadow-2xl animate-in fade-in zoom-in-95 duration-200 dark:bg-navy`}
         role="dialog"
         aria-modal="true"
         aria-label={title}
       >
         {/* Header */}
         {title && (
-          <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-200 dark:border-zinc-700">
-            <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">{title}</h2>
+          <div className="flex items-center justify-between px-6 py-4 border-b border-border">
+            <h2 className="text-lg font-semibold text-foreground dark:text-white">{title}</h2>
             <button
               onClick={onClose}
-              className="p-1 rounded-lg text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+              className="p-1 rounded-lg text-muted hover:text-foreground hover:bg-muted/5 transition-colors dark:hover:bg-navy-light/20"
               aria-label="Close"
             >
               <svg
