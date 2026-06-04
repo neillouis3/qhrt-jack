@@ -1,3 +1,9 @@
+/**
+ * TODO: Add filtering, sorting, pagination to users table.
+ * TODO: Replace placeholder links as assets are developed.
+ *        (User management page, content management page, analytics page.)
+ */
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -7,7 +13,6 @@ interface AdminStats {
   totalUsers: number;
   intakeCompleted: number;
   sessionsCompleted: number;
-  pendingReview: number;
 }
 
 interface RecentUser {
@@ -25,7 +30,6 @@ export default function AdminDashboard() {
     totalUsers: 0,
     intakeCompleted: 0,
     sessionsCompleted: 0,
-    pendingReview: 0,
   });
   const [recentUsers, setRecentUsers] = useState<RecentUser[]>([]);
   const [loading, setLoading] = useState(true);
@@ -40,14 +44,14 @@ export default function AdminDashboard() {
           setUser(sessionData.user);
         }
 
-        // Fetch admin stats (TODO: Implement API route.)
+        // Fetch admin stats
         const statsRes = await fetch('/api/admin/stats');
         if (statsRes.ok) {
           const statsData = await statsRes.json();
           setStats(statsData);
         }
 
-        // Fetch recent users (TODO: Implement API route.)
+        // Fetch recent users
         const usersRes = await fetch('/api/admin/users?limit=5');
         if (usersRes.ok) {
           const usersData = await usersRes.json();
@@ -63,7 +67,7 @@ export default function AdminDashboard() {
     fetchData();
   }, []);
 
-  const displayName = user?.email?.split('@')[0] ?? 'Admin';
+  const displayName = user?.email?.split('@')[0] ?? 'Admin'; // TODO: Fetch actual name when implemented
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
 
@@ -128,26 +132,6 @@ export default function AdminDashboard() {
       ),
       color: 'from-blue-500 to-indigo-500',
     },
-    {
-      label: 'Pending Review',
-      value: stats.pendingReview,
-      icon: (
-        <svg
-          className="h-6 w-6"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          strokeWidth={1.5}
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"
-          />
-        </svg>
-      ),
-      color: 'from-amber-400 to-orange-400',
-    },
   ];
 
   if (loading) {
@@ -200,7 +184,7 @@ export default function AdminDashboard() {
           </div>
 
           {/* Stats Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-10">
+          <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-3 gap-5 mb-10">
             {statCards.map((stat) => (
               <div
                 key={stat.label}
@@ -238,7 +222,7 @@ export default function AdminDashboard() {
                   href="/admin/content"
                   className="text-sm font-medium text-primary hover:text-primary-light dark:text-primary-light dark:hover:text-primary transition-colors"
                 >
-                  View all →
+                  View all &rarr;
                 </Link>
               </div>
               <div className="overflow-x-auto">
