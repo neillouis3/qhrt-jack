@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Navbar, { NavItem } from '@/components/Navbar';
 import UserMenu from '@/components/UserMenu';
 import SettingsModal from '@/components/SettingsModal';
 import { useNavbarLinks } from '@/components/NavbarProvider';
+import { useSession, clearSessionCache } from '@/hooks/useSession';
 
 interface NavbarLayoutProps {
   children: React.ReactNode;
@@ -15,36 +16,22 @@ export default function NavbarLayout({ children }: NavbarLayoutProps) {
   const { adminLinks: ctxAdminLinks, userLinks: ctxUserLinks } = useNavbarLinks();
   const router = useRouter();
   const pathname = usePathname();
-  const [user, setUser] = useState<{ name: string; email: string; role: string } | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { session, loading, invalidate } = useSession();
   const [settingsOpen, setSettingsOpen] = useState(false);
 
-  useEffect(() => {
-    const checkSession = async () => {
-      if (user !== null) return; // already fetched
-      try {
-        const res = await fetch('/api/auth/session');
-        if (res.ok) {
-          const data = await res.json();
-          setUser({
-            name: data.user.email ?? 'User',
-            email: data.user.email ?? '',
-            role: data.role ?? 'user',
-          });
-        }
-      } catch {
-        /* not logged in */
-      } finally {
-        setLoading(false);
+  const user = session
+    ? {
+        name: session.user.email ?? 'User',
+        email: session.user.email ?? '',
+        role: session.role ?? 'user',
       }
-    };
-    checkSession();
-  }, [user, pathname]);
+    : null;
 
   const handleLogout = async () => {
     try {
       await fetch('/api/auth/logout', { method: 'POST' });
-      setUser(null);
+      clearSessionCache();
+      invalidate();
       router.push('/');
     } catch {
       /* handle error */

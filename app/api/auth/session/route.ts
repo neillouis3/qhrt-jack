@@ -30,31 +30,36 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid session' }, { status: 401 });
     }
 
-    // Fetch role from public.user_roles table (default to 'user' if not found, bypass RLS)
-    let role = 'user';
-    const { data: roleData, error: roleError } = await supabaseServer
-      .from('user_roles')
-      .select('role')
-      .eq('user_id', user.id)
-      .single();
+    // Fetch role and intake status in parallel (bypass RLS with server client)
+    const [roleResult, progressResult] = await Promise.all([
+      supabaseServer.from('user_roles').select('role').eq('user_id', user.id).single(),
+      supabaseServer
+        .from('user_progress')
+        .select('intake_completed')
+        .eq('user_id', user.id)
+        .maybeSingle(),
+    ]);
 
-    if (!roleError && roleData?.role) {
-      role = roleData.role;
+    let role = 'user';
+    if (!roleResult.error && roleResult.data?.role) {
+      role = roleResult.data.role;
     }
 
-    // Fetch intake status (bypass RLS with server client)
     let intakeCompleted = false;
-    const { data: progressData, error: progressError } = await supabaseServer
-      .from('user_progress')
-      .select('intake_completed')
-      .eq('user_id', user.id)
-      .maybeSingle();
-
-    if (!progressError && progressData?.intake_completed) {
+    if (!progressResult.error && progressResult.data?.intake_completed) {
       intakeCompleted = true;
     }
 
-    return NextResponse.json({ user: { ...user }, role, intakeCompleted }, { status: 200 });
+    return NextResponse.json(
+      { user: { ...user }, role, intakeCompleted },
+      {
+        status: 200,
+        headers: {
+          // Cache session response briefly to avoid thundering herd on rapid navs
+          'cache-control': 'public, max-age=5, s-maxage=10',
+        },
+      }
+    );
   } catch (error) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }

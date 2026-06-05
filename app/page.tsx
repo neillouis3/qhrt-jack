@@ -1,30 +1,17 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useSession } from '@/hooks/useSession';
 
 export default function LandingPage() {
-  const [user, setUser] = useState<{ name: string; email: string; role: string } | null>(null);
-
-  useEffect(() => {
-    const checkSession = async () => {
-      if (user !== null) return; // already fetched
-      try {
-        const res = await fetch('/api/auth/session');
-        if (res.ok) {
-          const data = await res.json();
-          setUser({
-            name: data.user.email ?? 'User',
-            email: data.user.email ?? '',
-            role: data.role ?? 'user',
-          });
-        }
-      } catch {
-        /* not logged in */
+  const { session } = useSession();
+  const user = session
+    ? {
+        name: session.user.email ?? 'User',
+        email: session.user.email ?? '',
+        role: session.role ?? 'user',
       }
-    };
-    checkSession();
-  }, [user]);
+    : null;
 
   return (
     <div className="flex flex-col flex-1">

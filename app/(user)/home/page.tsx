@@ -4,41 +4,28 @@ import { useState, useEffect } from 'react';
 import IntakeForm from '@/components/IntakeForm';
 import Dashboard from '@/components/Dashboard';
 import Modal from '@/components/Modal';
+import { useSession } from '@/hooks/useSession';
 
 export default function Home() {
-  const [user, setUser] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  // Use shared session hook - no redundant /api/auth/session fetch
+  const { session, loading: sessionLoading } = useSession();
   const [showIntake, setShowIntake] = useState(false);
   const [intakeComplete, setIntakeComplete] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Fetch session from API
-    const fetchSession = async () => {
-      try {
-        const res = await fetch('/api/auth/session');
-        if (res.ok) {
-          const data = await res.json();
-          setUser(data.user);
+    // Once session is loaded, determine intake state
+    if (sessionLoading) return;
 
-          if (data.intakeCompleted) {
-            setIntakeComplete(true);
-            setShowIntake(false);
-          } else {
-            setShowIntake(true);
-          }
-        } else {
-          setShowIntake(true);
-        }
-      } catch (err) {
-        console.log('[fetchSession] Error:', err);
-        setShowIntake(true);
-      } finally {
-        setLoading(false);
-      }
-    };
+    if (session?.intakeCompleted) {
+      setIntakeComplete(true);
+      setShowIntake(false);
+    } else if (session) {
+      setShowIntake(true);
+    }
 
-    fetchSession();
-  }, []);
+    setLoading(false);
+  }, [session, sessionLoading]);
 
   const handleIntakeComplete = () => {
     setShowIntake(false);
@@ -60,7 +47,7 @@ export default function Home() {
 
   return (
     <div className="flex flex-col flex-1 items-center bg-zinc-50 font-sans dark:bg-black">
-      <Dashboard userName={user?.email} onIntakeComplete={intakeComplete} />
+      <Dashboard userName={session?.user?.email} onIntakeComplete={intakeComplete} />
 
       <Modal
         isOpen={showIntake}

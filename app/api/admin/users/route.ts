@@ -68,40 +68,48 @@ export async function GET(request: NextRequest) {
 
     const userIds = (roles ?? []).map((r) => r.user_id);
 
-    // Fetch emails + created_at from auth.users separately (auth tables can't be joined in RLS queries)
+    // Fetch user info and progress data in parallel
     let userInfoMap: Record<string, { email: string; created_at: string }> = {};
-    if (userIds.length > 0) {
-      try {
-        const { data: adminUsers, error: adminErr } = await supabaseServer.auth.admin.listUsers();
-
-        if (adminErr) {
-          console.error('[api/admin/users] auth.admin.listUsers error:', adminErr);
-        } else {
-          // Filter to only the users we care about
-          const relevant = (adminUsers?.users ?? []).filter((u: any) => userIds.includes(u.id));
-          for (const u of relevant) {
-            userInfoMap[u.id] = {
-              email: u.email ?? '',
-              created_at:
-                typeof u.created_at === 'string' ? u.created_at : new Date().toISOString(),
-            };
-          }
-        }
-      } catch (err) {
-        console.error('[api/admin/users] auth.admin.listUsers exception:', err);
-      }
-    }
-
-    // Fetch progress data for each user
     let progressMap: Record<string, any> = {};
-    if (userIds.length > 0) {
-      const { data: progressData, error: progressErr } = await supabaseServer
-        .from('user_progress')
-        .select('user_id, intake_completed, sessions_completed')
-        .in('user_id', userIds);
 
-      if (!progressErr && progressData) {
-        for (const p of progressData as any[]) {
+    if (userIds.length > 0) {
+      const [userInfoResults, progressRes] = await Promise.all([
+        // Fetch ALL auth users in one call (faster than N parallel getUserById for small limits)
+        // then filter to only the IDs we care about
+        (async () => {
+          try {
+            const { data: adminUsers, error: adminErr } = await supabaseServer.auth.admin.listUsers(
+              {
+                perPage: 100, // fetch up to 100 users in one call
+              }
+            );
+            if (!adminErr && adminUsers?.users) {
+              return adminUsers.users
+                .filter((u: any) => userIds.includes(u.id))
+                .map((u: any) => ({
+                  id: u.id,
+                  email: u.email ?? '',
+                  created_at: u.created_at ?? new Date().toISOString(),
+                }));
+            }
+          } catch (err) {
+            console.error('[api/admin/users] auth.admin.listUsers error:', err);
+          }
+          return [];
+        })(),
+        // Batch-fetch progress data in a single query
+        supabaseServer
+          .from('user_progress')
+          .select('user_id, intake_completed, sessions_completed')
+          .in('user_id', userIds),
+      ]);
+
+      for (const u of userInfoResults as { id: string; email: string; created_at: string }[]) {
+        userInfoMap[u.id] = { email: u.email, created_at: u.created_at };
+      }
+
+      if (!progressRes.error && progressRes.data) {
+        for (const p of progressRes.data as any[]) {
           progressMap[p.user_id] = p;
         }
       }

@@ -45,20 +45,18 @@ export async function POST(request: NextRequest) {
     }
 
     // Fetch role from public.user_roles table using the user's UUID
+    // Use maybeSingle instead of single to avoid errors when no role record exists
     const userId = data.user?.id;
     let role = 'user'; // default fallback
 
     if (userId) {
-      const { data: roleData, error: roleError } = await supabaseServer
+      const { data: roleData } = await supabaseServer
         .from('user_roles')
-        .select('role')
+        .select('role', { count: 'none' })
         .eq('user_id', userId)
-        .single();
+        .maybeSingle(); // won't throw if no match
 
-      if (roleError) {
-        // If no role record exists, default to 'user'
-        role = 'user';
-      } else if (roleData && roleData.role) {
+      if (roleData?.role) {
         role = roleData.role;
       }
     }

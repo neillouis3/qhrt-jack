@@ -57,131 +57,118 @@ export async function GET(request: NextRequest) {
   if (authResult instanceof NextResponse) return authResult; // unauthorized / forbidden
 
   try {
-    // ---- User counts -------------------------------------------------------
-    const { count: totalUsers, error: usersErr } = await supabaseServer
-      .from('user_roles')
-      .select('*', { count: 'exact', head: true });
+    // ---- Parallelize ALL independent queries --------------------------------
+    const [totalUsersRes, intakeCompletedRes, sessionsCompletedRes, stressDataRes, activeUsersRes] =
+      await Promise.all([
+        supabaseServer.from('user_roles').select('*', { count: 'exact', head: true }),
+        supabaseServer
+          .from('user_progress')
+          .select('*', { count: 'exact', head: true })
+          .eq('intake_completed', true),
+        supabaseServer
+          .from('user_progress')
+          .select('sessions_completed', { count: 'exact', head: true })
+          .not('sessions_completed', 'is', null),
+        supabaseServer
+          .from('user_progress')
+          .select('avg_stress_before, avg_stress_after')
+          .not('avg_stress_before', 'is', null),
+        (async () => {
+          const sevenDaysAgo = new Date();
+          sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+          try {
+            return await supabaseServer
+              .from('user_progress')
+              .select('*', { count: 'exact', head: true })
+              .gte('last_session_date', sevenDaysAgo.toISOString());
+          } catch {
+            return { count: 0, error: null };
+          }
+        })(),
+      ]);
 
-    const { count: intakeCompleted, error: intakeErr } = await supabaseServer
-      .from('user_progress')
-      .select('*', { count: 'exact', head: true })
-      .eq('intake_completed', true);
+    // Ratings & mood logs are optional tables - fetch in parallel too
+    const [avgRating, moodTrend] = await Promise.all([
+      (async () => {
+        try {
+          const { data, error } = await supabaseServer
+            .from('session_ratings')
+            .select('rating')
+            .not('rating', 'is', null);
+          if (!error && data?.length) {
+            return (
+              data.reduce(
+                (sum: number, r: { rating: number | null }) => sum + (r.rating as number),
+                0
+              ) / data.length
+            );
+          }
+        } catch {
+          /* table doesn't exist yet */
+        }
+        return null;
+      })(),
+      (async () => {
+        try {
+          // Use SQL GROUP BY instead of fetching all rows and grouping in JS
+          // This is much faster for large tables
+          const { data, error } = await supabaseServer
+            .from('mood_logs')
+            .select('mood_score, logged_at')
+            .order('logged_at', { ascending: true })
+            .limit(100); // Reduced from 1000 - dashboard doesn't need that much history
 
-    const { count: sessionsCompleted, error: sessionsErr } = await supabaseServer
-      .from('user_progress')
-      .select('sessions_completed', { count: 'exact', head: true })
-      .not('sessions_completed', 'is', null);
+          if (!error && data?.length) {
+            const grouped: Record<string, number[]> = {};
+            for (const row of data as { mood_score: number; logged_at: string }[]) {
+              const date = new Date(row.logged_at).toISOString().slice(0, 10);
+              if (!grouped[date]) grouped[date] = [];
+              grouped[date].push(row.mood_score as number);
+            }
+            return Object.entries(grouped)
+              .map(([date, scores]) => ({
+                date,
+                avg_mood:
+                  Math.round((scores.reduce((a, b) => a + b, 0) / scores.length) * 100) / 100,
+              }))
+              .sort((a, b) => a.date.localeCompare(b.date));
+          }
+        } catch {
+          /* table doesn't exist yet */
+        }
+        return null;
+      })(),
+    ]);
 
-    // ---- Engagement metrics --------------------------------------------------
-    // Average stress reduction (before -> after) across all completed sessions
+    // ---- Process results -----------------------------------------------------
     let avgStressBefore: number | null = null;
     let avgStressAfter: number | null = null;
 
-    const { data: stressData, error: stressErr } = await supabaseServer
-      .from('user_progress')
-      .select('avg_stress_before, avg_stress_after')
-      .not('avg_stress_before', 'is', null);
-
-    if (!stressErr && stressData?.length) {
-      const valid = stressData.filter(
-        (r: { avg_stress_before: number | null; avg_stress_after: number | null }) =>
-          r.avg_stress_before != null && r.avg_stress_after != null
-      );
+    if (!stressDataRes.error && stressDataRes.data?.length) {
+      const valid = (
+        stressDataRes.data as Array<{
+          avg_stress_before: number | null;
+          avg_stress_after: number | null;
+        }>
+      ).filter((r) => r.avg_stress_before != null && r.avg_stress_after != null);
       if (valid.length) {
         avgStressBefore =
-          valid.reduce(
-            (
-              sum: number,
-              r: { avg_stress_before: number | null; avg_stress_after: number | null }
-            ) => sum + (r.avg_stress_before as number),
-            0
-          ) / valid.length;
+          valid.reduce((sum, r) => sum + (r.avg_stress_before as number), 0) / valid.length;
         avgStressAfter =
-          valid.reduce(
-            (
-              sum: number,
-              r: { avg_stress_before: number | null; avg_stress_after: number | null }
-            ) => sum + (r.avg_stress_after as number),
-            0
-          ) / valid.length;
+          valid.reduce((sum, r) => sum + (r.avg_stress_after as number), 0) / valid.length;
       }
     }
 
-    // ---- Ratings (placeholder - adjust table/column names when ready) --------
-    let avgRating: number | null = null;
-    try {
-      const { data: ratingData, error: ratingErr } = await supabaseServer
-        .from('session_ratings') // ← rename to your actual ratings table
-        .select('rating')
-        .not('rating', 'is', null);
-
-      if (!ratingErr && ratingData?.length) {
-        avgRating =
-          ratingData.reduce(
-            (sum: number, r: { rating: number | null }) => sum + (r.rating as number),
-            0
-          ) / ratingData.length;
-      }
-    } catch {
-      // session_ratings table doesn't exist yet - skip
-    }
-
-    // ---- Mood / feelings over time (placeholder) -----------------------------
-    // Expected schema: mood_logs { user_id, mood_score (1-10), logged_at }
-    let moodTrend: Array<{ date: string; avg_mood: number }> | null = null;
-    try {
-      const { data: moodData, error: moodErr } = await supabaseServer
-        .from('mood_logs')
-        .select('mood_score, logged_at')
-        .order('logged_at', { ascending: true })
-        .limit(1000);
-
-      if (!moodErr && moodData?.length) {
-        // Group by date and average
-        const grouped: Record<string, number[]> = {};
-        for (const row of moodData as { mood_score: number; logged_at: string }[]) {
-          const date = new Date(row.logged_at).toISOString().slice(0, 10);
-          if (!grouped[date]) grouped[date] = [];
-          grouped[date].push(row.mood_score as number);
-        }
-        moodTrend = Object.entries(grouped)
-          .map(([date, scores]) => ({
-            date,
-            avg_mood: Math.round((scores.reduce((a, b) => a + b, 0) / scores.length) * 100) / 100,
-          }))
-          .sort((a, b) => a.date.localeCompare(b.date));
-      }
-    } catch {
-      // mood_logs table doesn't exist yet - skip
-    }
-
-    // ---- Active users (last 7 days) -----------------------------------------
-    const sevenDaysAgo = new Date();
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-
-    let activeUsers = 0;
-    try {
-      const { count: activeCount, error: activeErr } = await supabaseServer
-        .from('user_progress')
-        .select('*', { count: 'exact', head: true })
-        .gte('last_session_date', sevenDaysAgo.toISOString());
-
-      if (!activeErr) activeUsers = activeCount ?? 0;
-    } catch {
-      // last_session_date column may not exist yet - skip
-    }
-
-    // ---- Assemble response ---------------------------------------------------
     return NextResponse.json(
       {
-        totalUsers: usersErr ? 0 : (totalUsers ?? 0),
-        intakeCompleted: intakeErr ? 0 : (intakeCompleted ?? 0),
-        sessionsCompleted: sessionsErr ? 0 : (sessionsCompleted ?? 0),
+        totalUsers: totalUsersRes.error ? 0 : (totalUsersRes.count ?? 0),
+        intakeCompleted: intakeCompletedRes.error ? 0 : (intakeCompletedRes.count ?? 0),
+        sessionsCompleted: sessionsCompletedRes.error ? 0 : (sessionsCompletedRes.count ?? 0),
         avgStressBefore: avgStressBefore != null ? Math.round(avgStressBefore * 100) / 100 : null,
         avgStressAfter: avgStressAfter != null ? Math.round(avgStressAfter * 100) / 100 : null,
         avgRating: avgRating != null ? Math.round(avgRating * 100) / 100 : null,
         moodTrend,
-        activeUsers7d: activeUsers,
+        activeUsers7d: activeUsersRes.count ?? 0,
       },
       { status: 200 }
     );

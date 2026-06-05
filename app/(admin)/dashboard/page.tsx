@@ -8,6 +8,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useSession } from '@/hooks/useSession';
 
 interface AdminStats {
   totalUsers: number;
@@ -25,7 +26,8 @@ interface RecentUser {
 }
 
 export default function AdminDashboard() {
-  const [user, setUser] = useState<{ email: string; id: string } | null>(null);
+  // Use shared session hook - no redundant /api/auth/session fetch
+  const { session } = useSession();
   const [stats, setStats] = useState<AdminStats>({
     totalUsers: 0,
     intakeCompleted: 0,
@@ -37,22 +39,17 @@ export default function AdminDashboard() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Fetch session
-        const sessionRes = await fetch('/api/auth/session');
-        if (sessionRes.ok) {
-          const sessionData = await sessionRes.json();
-          setUser(sessionData.user);
-        }
+        // Fetch admin stats and recent users in parallel (session already handled by useSession)
+        const [statsRes, usersRes] = await Promise.all([
+          fetch('/api/admin/stats'),
+          fetch('/api/admin/users?limit=5'),
+        ]);
 
-        // Fetch admin stats
-        const statsRes = await fetch('/api/admin/stats');
         if (statsRes.ok) {
           const statsData = await statsRes.json();
           setStats(statsData);
         }
 
-        // Fetch recent users
-        const usersRes = await fetch('/api/admin/users?limit=5');
         if (usersRes.ok) {
           const usersData = await usersRes.json();
           setRecentUsers(usersData);
@@ -67,7 +64,7 @@ export default function AdminDashboard() {
     fetchData();
   }, []);
 
-  const displayName = user?.email?.split('@')[0] ?? 'Admin'; // TODO: Fetch actual name when implemented
+  const displayName = session?.user?.email?.split('@')[0] ?? 'Admin'; // TODO: Fetch actual name when implemented
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
 

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import LoginForm from '@/components/LoginForm';
+import { clearSessionCache } from '@/hooks/useSession';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -31,7 +32,11 @@ export default function LoginPage() {
   }, [router]);
 
   const handleSuccess = async () => {
-    // Check the user's role to determine where to redirect
+    // Clear the session cache so NavbarLayout's useSession will re-fetch fresh data
+    clearSessionCache();
+
+    // The login API already returns the role, but we need it for redirect.
+    // Fetch session once (this will be cached by useSession for subsequent renders).
     try {
       const response = await fetch('/api/auth/session');
       if (response.ok) {
