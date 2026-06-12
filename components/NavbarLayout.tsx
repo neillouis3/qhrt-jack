@@ -39,7 +39,12 @@ export default function NavbarLayout({ children }: NavbarLayoutProps) {
   };
 
   const isAdminRoute =
-    (pathname?.startsWith('/dashboard') || pathname?.startsWith('/content')) ?? false;
+    (pathname?.startsWith('/dashboard') ||
+      pathname?.startsWith('/content') ||
+      pathname?.startsWith('/users') ||
+      pathname?.startsWith('/analytics') ||
+      pathname?.startsWith('/admin')) ??
+    false;
   const isUserRoute = (pathname?.startsWith('/home') || pathname?.startsWith('/sessions')) ?? false;
   const isAuthRoute = pathname?.startsWith('/auth') ?? false;
 

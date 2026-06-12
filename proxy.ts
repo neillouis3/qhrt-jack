@@ -34,7 +34,11 @@ export async function proxy(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   const { pathname } = request.nextUrl;
-  const isAdminRoute = pathname.startsWith('/dashboard') || pathname.startsWith('/content');
+  const isAdminRoute =
+    pathname.startsWith('/dashboard') ||
+    pathname.startsWith('/content') ||
+    pathname.startsWith('/users') ||
+    pathname.startsWith('/analytics');
   const isUserRoute = pathname.startsWith('/home') || pathname.startsWith('/sessions');
   const isAuthRoute = pathname.startsWith('/auth');
 
@@ -95,6 +99,8 @@ export const config = {
     '/((?!api|_next/static|_next/image).*)',
     '/dashboard/:path*',
     '/content/:path*',
+    '/users/:path*',
+    '/analytics/:path*',
     '/home/:path*',
     '/sessions/:path*',
     '/auth/:path*',

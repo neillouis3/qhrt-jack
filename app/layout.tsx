@@ -25,7 +25,9 @@ export const metadata: Metadata = {
 
 const adminLinks: NavItem[] = [
   { name: 'Dashboard', path: '/dashboard' },
+  { name: 'Users', path: '/users' },
   { name: 'Content', path: '/content' },
+  { name: 'Analytics', path: '/analytics' },
 ];
 
 const userLinks: NavItem[] = [

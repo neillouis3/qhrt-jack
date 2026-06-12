@@ -52,7 +52,7 @@ export default function AdminDashboard() {
 
         if (usersRes.ok) {
           const usersData = await usersRes.json();
-          setRecentUsers(usersData);
+          setRecentUsers(usersData.users ?? []);
         }
       } catch (err) {
         console.error('[AdminDashboard] Error fetching data:', err);
@@ -216,7 +216,7 @@ export default function AdminDashboard() {
               <div className="flex items-center justify-between px-6 py-5 border-b border-border dark:border-navy">
                 <h2 className="text-lg font-semibold text-navy dark:text-white">Recent Users</h2>
                 <Link
-                  href="/admin/content"
+                  href="/users"
                   className="text-sm font-medium text-primary hover:text-primary-light dark:text-primary-light dark:hover:text-primary transition-colors"
                 >
                   View all &rarr;
@@ -315,7 +315,7 @@ export default function AdminDashboard() {
                 {[
                   {
                     label: 'Manage Users',
-                    href: '/admin/content',
+                    href: '/users',
                     icon: (
                       <svg
                         className="h-5 w-5"
@@ -377,7 +377,7 @@ export default function AdminDashboard() {
                   },
                   {
                     label: 'View Analytics',
-                    href: '/admin/analytics',
+                    href: '/analytics',
                     icon: (
                       <svg
                         className="h-5 w-5"
@@ -428,7 +428,8 @@ export default function AdminDashboard() {
 
           {/* Footer */}
           <div className="mt-12 pb-6 text-center text-xs text-muted">
-            &copy; {new Date().getFullYear()} QHRT Admin Panel — Built with Next.js &amp; Supabase
+            &copy; {new Date().getFullYear() + ' '} QHRT Admin Panel — Built with Next.js &amp;
+            Supabase
           </div>
         </div>
       </div>
