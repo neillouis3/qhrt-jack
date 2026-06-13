@@ -242,16 +242,6 @@ export async function GET(request: NextRequest) {
       return { date, count };
     });
 
-    // ---- Debug: log raw query results for troubleshooting ------------------
-    console.log('[admin/analytics] signups30d:', {
-      totalNonAdminAuthUsers: nonAdminAuthUsers.length,
-      sample: nonAdminAuthUsers
-        .slice(0, 3)
-        .map((u: any) => ({ id: u.id, created_at: u.created_at })),
-    });
-    console.log('[admin/analytics] totalUsers (non-admin):', nonAdminAuthUsers.length);
-    console.log('[admin/analytics] adminUserIds:', [...adminUserIds]);
-
     // ---- Process sessions per day ------------------------------------------
     const sessionDates = getDateRange(30);
     const sessionsByDay = sessionDates.map((date) => {
