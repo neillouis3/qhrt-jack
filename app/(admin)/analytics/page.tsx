@@ -104,7 +104,12 @@ function BarChart({
   const containerRef = useRef<HTMLDivElement>(null);
 
   const maxCount = Math.max(...data.map((d) => d.count), 1);
-  const chartWidth = data.length * 20;
+
+  // Fixed viewBox width - bars distribute evenly regardless of data count
+  const fixedWidth = 600;
+  const slotWidth = fixedWidth / data.length;
+  const barWidth = Math.max(slotWidth * 0.7, 4);
+  const barOffset = (slotWidth - barWidth) / 2;
 
   // Horizontal grid lines at relative intervals (0%, 33%, 66%, 100%)
   const gridLines = [0, 0.33, 0.66, 1];
@@ -113,7 +118,7 @@ function BarChart({
     <div ref={containerRef} className="relative" style={{ height }}>
       <ChartTooltip position={tooltip?.pos ?? null} content={tooltip?.content ?? null} />
       <svg
-        viewBox={`0 0 ${chartWidth} ${height}`}
+        viewBox={`0 0 ${fixedWidth} ${height}`}
         className="w-full h-full"
         preserveAspectRatio="xMidYMid meet"
       >
@@ -123,22 +128,23 @@ function BarChart({
             key={pct}
             x1={0}
             y1={height * pct}
-            x2={chartWidth}
+            x2={fixedWidth}
             y2={height * pct}
             stroke="currentColor"
-            className="text-border/40"
-            strokeWidth="0.5"
+            className="text-border/70"
+            strokeWidth="1"
             strokeDasharray={pct === 0 ? '0' : '3 3'}
           />
         ))}
         {data.map((d, i) => {
           const barHeight = (d.count / maxCount) * height;
+          const slotX = i * slotWidth;
           return (
             <g key={d.date}>
               <rect
-                x={i * 20 + 2}
+                x={slotX + barOffset}
                 y={height - barHeight}
-                width={16}
+                width={barWidth}
                 height={Math.max(barHeight, 0)}
                 className={barColor}
                 rx={2}
@@ -146,9 +152,9 @@ function BarChart({
               />
               {/* Invisible hit area for hover */}
               <rect
-                x={i * 20}
+                x={slotX}
                 y={0}
-                width={20}
+                width={slotWidth}
                 height={height - 5}
                 fill="transparent"
                 onMouseEnter={(e) => {
