@@ -165,22 +165,20 @@ function Toast({
 export default function AdminUsersPage() {
   const { session } = useSession();
 
-  // State
-  const [users, setUsers] = useState<UserEntry[]>([]);
-  const [pagination, setPagination] = useState<PaginationInfo>({
-    page: 1,
-    limit: 10,
-    totalUsers: 0,
-    totalPages: 0,
-  });
+  // State — full dataset fetched once; everything else is client-side derived
+  const [allUsers, setAllUsers] = useState<UserEntry[]>([]);
   const [loading, setLoading] = useState(true);
-  const [fetching, setFetching] = useState(false);
+  const [processing, setProcessing] = useState(false); // brief processing indicator during filter changes
 
   // Filters
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
   const [intakeFilter, setIntakeFilter] = useState('all');
+
+  // Pagination (client-side)
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   // Sort
   const [sortBy, setSortBy] = useState<SortField>('created_at');
@@ -218,42 +216,39 @@ export default function AdminUsersPage() {
     return () => clearTimeout(timer);
   }, [search]);
 
-  // Fetch users
-  const fetchUsers = useCallback(
-    async (page: number, limit: number) => {
-      setFetching(true);
+  // Fetch ALL users once when filters change (client-side handles the rest)
+  useEffect(() => {
+    let cancelled = false;
+    const fetchAll = async () => {
+      // Only show full-page loader on initial load; use table overlay for re-fetches
+      if (allUsers.length === 0) {
+        setLoading(true);
+      } else {
+        setProcessing(true);
+      }
       try {
-        const params = new URLSearchParams({
-          page: String(page),
-          limit: String(limit),
-          search: debouncedSearch,
-          role: roleFilter,
-          intake: intakeFilter,
-          sortBy,
-          sortOrder,
-        });
-
-        const res = await fetch(`/api/admin/users?${params}`);
+        const res = await fetch('/api/admin/users?limit=1000&page=1');
         if (!res.ok) throw new Error('Failed to fetch users');
         const data: ApiResponse = await res.json();
-        setUsers(data.users);
-        setPagination(data.pagination);
+        if (!cancelled) setAllUsers(data.users);
       } catch (err) {
         console.error('[AdminUsers] Fetch error:', err);
         setToast({ message: 'Failed to load users.', type: 'error' });
       } finally {
-        setLoading(false);
-        setFetching(false);
+        if (!cancelled) {
+          setLoading(false);
+          // Brief processing indicator during filter debounce
+          setTimeout(() => setProcessing(false), 250);
+        }
       }
-    },
-    [debouncedSearch, roleFilter, intakeFilter, sortBy, sortOrder]
-  );
+    };
+    fetchAll();
+    return () => {
+      cancelled = true;
+    };
+  }, [debouncedSearch, roleFilter, intakeFilter]);
 
-  useEffect(() => {
-    fetchUsers(1, pagination.limit);
-  }, [debouncedSearch, roleFilter, intakeFilter, sortBy, sortOrder]);
-
-  // Handlers
+  // Handlers — all client-side, instant response
   const handleSort = (field: SortField) => {
     if (sortBy === field) {
       setSortOrder((prev) => (prev === 'asc' ? 'desc' : 'asc'));
@@ -264,17 +259,83 @@ export default function AdminUsersPage() {
   };
 
   const handlePageChange = (newPage: number) => {
-    fetchUsers(newPage, pagination.limit);
+    setCurrentPage(newPage);
   };
 
   const handleLimitChange = (newLimit: number) => {
-    setPagination((prev) => ({ ...prev, limit: newLimit }));
-    fetchUsers(1, newLimit);
+    setPageSize(newLimit);
+    setCurrentPage(1); // reset to first page on page size change
   };
 
   const showToast = (message: string, type: 'success' | 'error') => {
     setToast({ message, type });
   };
+
+  // ---------------------------------------------------------------------------
+  // Derived data — filtered, sorted, paginated (all client-side via useMemo)
+  // ---------------------------------------------------------------------------
+
+  const displayedUsers = useMemo(() => {
+    let result = [...allUsers];
+
+    // Filter by role
+    if (roleFilter !== 'all') {
+      result = result.filter((u) => u.role === roleFilter);
+    }
+
+    // Filter by intake status
+    if (intakeFilter === 'completed') {
+      result = result.filter((u) => u.intake_completed);
+    } else if (intakeFilter === 'pending') {
+      result = result.filter((u) => !u.intake_completed);
+    }
+
+    // Search by email (case-insensitive substring)
+    if (debouncedSearch.trim()) {
+      const term = debouncedSearch.trim().toLowerCase();
+      result = result.filter((u) => u.email.toLowerCase().includes(term));
+    }
+
+    // Sort
+    result.sort((a, b) => {
+      let cmp = 0;
+      if (sortBy === 'email') {
+        cmp = a.email.localeCompare(b.email);
+      } else if (sortBy === 'role') {
+        cmp = a.role.localeCompare(b.role);
+      } else if (sortBy === 'intake_completed') {
+        cmp = Number(a.intake_completed) - Number(b.intake_completed);
+      } else if (sortBy === 'sessions_completed') {
+        cmp = a.sessions_completed - b.sessions_completed;
+      } else {
+        // default: created_at
+        cmp = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+      }
+      return sortOrder === 'asc' ? cmp : -cmp;
+    });
+
+    // Paginate
+    const totalUsers = result.length;
+    const totalPages = Math.max(1, Math.ceil(totalUsers / pageSize));
+    const safePage = Math.min(currentPage, totalPages);
+    setCurrentPage(safePage);
+    const start = (safePage - 1) * pageSize;
+    const paginated = result.slice(start, start + pageSize);
+
+    return {
+      users: paginated,
+      pagination: { page: safePage, limit: pageSize, totalUsers, totalPages },
+    };
+  }, [
+    allUsers,
+    roleFilter,
+    intakeFilter,
+    debouncedSearch,
+    sortBy,
+    sortOrder,
+    currentPage,
+    pageSize,
+  ]);
 
   const handleResetPassword = async (user: UserEntry) => {
     setConfirmModal({
@@ -316,7 +377,7 @@ export default function AdminUsersPage() {
           });
           if (!res.ok) throw new Error('Failed');
           showToast(`Role updated to "${roleLabel}" for ${user.email}`, 'success');
-          fetchUsers(pagination.page, pagination.limit);
+          setAllUsers((prev) => prev.filter((u) => u.id !== user.id));
         } catch {
           showToast('Failed to update role.', 'error');
         }
@@ -340,7 +401,7 @@ export default function AdminUsersPage() {
           });
           if (!res.ok) throw new Error('Failed');
           showToast(`Account deleted for ${user.email}`, 'success');
-          fetchUsers(pagination.page, pagination.limit);
+          setAllUsers((prev) => prev.filter((u) => u.id !== user.id));
         } catch {
           showToast('Failed to delete user.', 'error');
         }
@@ -402,8 +463,8 @@ export default function AdminUsersPage() {
   // Pagination page numbers
   const pageNumbers = useMemo(() => {
     const pages: number[] = [];
-    const total = pagination.totalPages;
-    const current = pagination.page;
+    const total = displayedUsers.pagination.totalPages;
+    const current = displayedUsers.pagination.page;
     if (total <= 7) {
       for (let i = 1; i <= total; i++) pages.push(i);
     } else {
@@ -416,14 +477,14 @@ export default function AdminUsersPage() {
       pages.push(total);
     }
     return pages;
-  }, [pagination]);
+  }, [displayedUsers]);
 
   const displayName = session?.user?.email?.split('@')[0] ?? 'Admin';
 
   // Portal-rendered dropdown content (computed before render to avoid IIFE-in-JSX issues)
   const dropdownPortal = useMemo(() => {
     if (!openDropdownId || typeof window === 'undefined') return null;
-    const activeUser = users.find((u) => u.id === openDropdownId);
+    const activeUser = displayedUsers.users.find((u) => u.id === openDropdownId);
     const btnEl = buttonRefs.current[openDropdownId];
     if (!activeUser || !btnEl) return null;
     const rect = btnEl.getBoundingClientRect();
@@ -538,7 +599,7 @@ export default function AdminUsersPage() {
       </div>
     );
     return createPortal(dropdownContent, document.body);
-  }, [openDropdownId, users]);
+  }, [displayedUsers, openDropdownId]);
 
   // ---------------------------------------------------------------------------
   // Render
@@ -569,8 +630,9 @@ export default function AdminUsersPage() {
                 User Management
               </h1>
               <p className="mt-1 text-muted">
-                {pagination.totalUsers} user{pagination.totalUsers !== 1 ? 's ' : ' '} total —
-                manage roles, accounts &amp; access
+                {displayedUsers.pagination.totalUsers} user
+                {displayedUsers.pagination.totalUsers !== 1 ? 's ' : ' '} total — manage roles,
+                accounts &amp; access
               </p>
             </div>
           </div>
@@ -646,7 +708,17 @@ export default function AdminUsersPage() {
           </div>
 
           {/* Table */}
-          <div className="rounded-2xl border border-border bg-white shadow-sm dark:border-navy/50 dark:bg-navy-light/20">
+          <div className="relative rounded-2xl border border-border bg-white shadow-sm dark:border-navy/50 dark:bg-navy-light/20">
+            {/* Processing overlay — dims table with centered spinner */}
+            {processing && (
+              <div className="absolute inset-0 z-10 flex items-center justify-center rounded-2xl bg-white/60 backdrop-blur-[1px] transition-opacity dark:bg-navy/60">
+                <div className="flex flex-col items-center gap-3">
+                  <div className="h-8 w-8 animate-spin rounded-full border-3 border-primary border-t-transparent" />
+                  <span className="text-xs font-medium text-muted">Updating...</span>
+                </div>
+              </div>
+            )}
+
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
@@ -675,8 +747,8 @@ export default function AdminUsersPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border dark:divide-navy">
-                  {users.length > 0 ? (
-                    users.map((u) => (
+                  {displayedUsers.users.length > 0 ? (
+                    displayedUsers.users.map((u: UserEntry) => (
                       <tr
                         key={u.id}
                         className="hover:bg-accent-lighter/30 dark:hover:bg-primary/5 transition-colors"
@@ -833,7 +905,7 @@ export default function AdminUsersPage() {
                     key={n}
                     onClick={() => handleLimitChange(n)}
                     className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
-                      pagination.limit === n
+                      displayedUsers.pagination.limit === n
                         ? 'bg-primary/10 text-primary dark:bg-primary/20 dark:text-primary-light'
                         : 'text-muted hover:bg-muted/10'
                     }`}
@@ -845,15 +917,15 @@ export default function AdminUsersPage() {
 
               {/* Page info */}
               <span className="text-sm text-muted">
-                Page {pagination.page} of {pagination.totalPages || 1}
+                Page {displayedUsers.pagination.page} of {displayedUsers.pagination.totalPages || 1}
               </span>
 
               {/* Page buttons */}
               <div className="flex items-center gap-1">
                 {/* Prev */}
                 <button
-                  onClick={() => handlePageChange(pagination.page - 1)}
-                  disabled={pagination.page <= 1}
+                  onClick={() => handlePageChange(displayedUsers.pagination.page - 1)}
+                  disabled={displayedUsers.pagination.page <= 1}
                   className="inline-flex items-center justify-center rounded-lg p-2 text-muted hover:text-navy hover:bg-muted/10 disabled:opacity-30 disabled:cursor-not-allowed transition-colors dark:hover:text-white"
                 >
                   <svg
@@ -881,7 +953,7 @@ export default function AdminUsersPage() {
                       key={num}
                       onClick={() => handlePageChange(num)}
                       className={`inline-flex items-center justify-center rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
-                        pagination.page === num
+                        displayedUsers.pagination.page === num
                           ? 'bg-primary text-white shadow-sm'
                           : 'text-muted hover:text-navy hover:bg-muted/10 dark:hover:text-white'
                       }`}
@@ -893,8 +965,8 @@ export default function AdminUsersPage() {
 
                 {/* Next */}
                 <button
-                  onClick={() => handlePageChange(pagination.page + 1)}
-                  disabled={pagination.page >= pagination.totalPages}
+                  onClick={() => handlePageChange(displayedUsers.pagination.page + 1)}
+                  disabled={displayedUsers.pagination.page >= displayedUsers.pagination.totalPages}
                   className="inline-flex items-center justify-center rounded-lg p-2 text-muted hover:text-navy hover:bg-muted/10 disabled:opacity-30 disabled:cursor-not-allowed transition-colors dark:hover:text-white"
                 >
                   <svg
