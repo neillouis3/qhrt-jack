@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import IntakeForm from '@/components/IntakeForm';
+import ConditionSelection from '@/components/ConditionSelection';
 import Dashboard from '@/components/Dashboard';
 import Modal from '@/components/Modal';
 import { useSession } from '@/hooks/useSession';
@@ -9,32 +9,56 @@ import { useSession } from '@/hooks/useSession';
 export default function Home() {
   // Use shared session hook - no redundant /api/auth/session fetch
   const { session, loading: sessionLoading } = useSession();
-  const [showIntake, setShowIntake] = useState(false);
-  const [intakeComplete, setIntakeComplete] = useState(false);
+  const [showSelection, setShowSelection] = useState(false);
+  const [selectionComplete, setSelectionComplete] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Once session is loaded, determine intake state
+    // Once session is loaded, check if user has selected conditions
     if (sessionLoading) return;
 
-    if (session?.intakeCompleted) {
-      setIntakeComplete(true);
-      setShowIntake(false);
-    } else if (session) {
-      setShowIntake(true);
+    if (!session) {
+      setLoading(false);
+      return;
     }
 
-    setLoading(false);
+    // Check for selected conditions
+    fetch('/api/user/selected-conditions')
+      .then((res) => {
+        if (!res.ok) throw new Error('Failed to fetch');
+        return res.json();
+      })
+      .then((data) => {
+        const hasConditions = (data.selectedConditions ?? []).length > 0;
+        if (hasConditions) {
+          setSelectionComplete(true);
+          setShowSelection(false);
+        } else {
+          setShowSelection(true);
+        }
+      })
+      .catch(() => {
+        // If API doesn't exist yet (tables not created), fall back to intake check
+        if (session.intakeCompleted) {
+          setSelectionComplete(true);
+          setShowSelection(false);
+        } else {
+          setShowSelection(true);
+        }
+      })
+      .finally(() => {
+        setLoading(false);
+      });
   }, [session, sessionLoading]);
 
-  const handleIntakeComplete = () => {
-    setShowIntake(false);
-    setIntakeComplete(true);
+  const handleSelectionComplete = () => {
+    setShowSelection(false);
+    setSelectionComplete(true);
   };
 
-  const handleIntakeCancel = () => {
-    setShowIntake(false);
-    setIntakeComplete(true);
+  const handleSelectionSkip = () => {
+    setShowSelection(false);
+    setSelectionComplete(true);
   };
 
   if (loading) {
@@ -47,18 +71,18 @@ export default function Home() {
 
   return (
     <div className="flex flex-col flex-1 items-center bg-zinc-50 font-sans dark:bg-black">
-      <Dashboard userName={session?.user?.email} onIntakeComplete={intakeComplete} />
+      <Dashboard userName={session?.user?.email} onIntakeComplete={selectionComplete} />
 
       <Modal
-        isOpen={showIntake}
-        onClose={handleIntakeCancel}
+        isOpen={showSelection}
+        onClose={handleSelectionSkip}
         title="Welcome to QHRT — Let's get started"
+        size="xl"
       >
         <p className="text-sm text-muted mb-4">
-          Before we begin, we'd like to understand a bit about you. This helps us tailor your
-          experience. It takes about 3-4 minutes.
+          Before we begin, tell us what you'd like to focus on. You can always change this later.
         </p>
-        <IntakeForm onComplete={handleIntakeComplete} onCancel={handleIntakeCancel} />
+        <ConditionSelection onComplete={handleSelectionComplete} onSkip={handleSelectionSkip} />
       </Modal>
     </div>
   );
