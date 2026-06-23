@@ -241,7 +241,7 @@ export default function ConditionSelection({
   }
 
   return (
-    <div className="w-full max-w-lg mx-auto">
+    <div className="w-full max-w-2xl mx-auto">
       <StepIndicator current={step} total={3} />
 
       {/* Step 1: Browse Categories */}
@@ -253,10 +253,17 @@ export default function ConditionSelection({
           <p className="text-sm text-muted mb-5">
             Choose a category below to explore available focus areas.
           </p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {categories.map((cat) => (
-              <CategoryCard key={cat.id} category={cat} onClick={() => handleCategoryClick(cat)} />
-            ))}
+          {/* Scrollable category grid — max height based on viewport to prevent clipping */}
+          <div className="max-h-[50vh] overflow-y-auto pr-1">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-3">
+              {categories.map((cat) => (
+                <CategoryCard
+                  key={cat.id}
+                  category={cat}
+                  onClick={() => handleCategoryClick(cat)}
+                />
+              ))}
+            </div>
           </div>
         </div>
       )}
