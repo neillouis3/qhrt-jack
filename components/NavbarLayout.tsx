@@ -28,6 +28,8 @@ export default function NavbarLayout({ children }: NavbarLayoutProps) {
     : null;
 
   const handleLogout = async () => {
+    // Close settings modal before logging out
+    setSettingsOpen(false);
     try {
       await fetch('/api/auth/logout', { method: 'POST' });
       clearSessionCache();
