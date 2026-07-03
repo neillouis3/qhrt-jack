@@ -71,7 +71,11 @@ export default function Home() {
 
   return (
     <div className="flex flex-col flex-1 items-center bg-zinc-50 font-sans dark:bg-black">
-      <Dashboard userName={session?.user?.email} onIntakeComplete={selectionComplete} />
+      <Dashboard
+        userId={session?.user?.id}
+        userName={session?.user?.email}
+        onIntakeComplete={selectionComplete}
+      />
 
       <Modal
         isOpen={showSelection}

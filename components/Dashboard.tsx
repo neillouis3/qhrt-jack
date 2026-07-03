@@ -1,9 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabaseClient';
+import Modal from '@/components/Modal';
+import AssessmentRenderer from '@/components/AssessmentRenderer';
 
 interface DashboardProps {
+  userId?: string;
   userName?: string;
   userEmail?: string;
   onIntakeComplete: boolean;
@@ -15,6 +17,34 @@ interface UserProgress {
   last_session_date: string | null;
   avg_stress_before: number | null;
   avg_stress_after: number | null;
+}
+
+interface SelectedCondition {
+  id: string;
+  condition_id: string;
+  date_selected: string;
+  conditions: {
+    id: string;
+    name: string;
+    short_description: string | null;
+    condition_categories: {
+      id: string;
+      name: string;
+    };
+  };
+}
+
+interface AssessmentResult {
+  id: string;
+  question_id: string;
+  answer_value: number;
+  answered_at: string;
+  assessment_questions: {
+    id: string;
+    question_text: string;
+    minimum_value: number;
+    maximum_value: number;
+  };
 }
 
 const sessionCards = [
@@ -37,30 +67,43 @@ const sessionCards = [
   },
 ];
 
-export default function Dashboard({ userName, userEmail, onIntakeComplete }: DashboardProps) {
+export default function Dashboard({
+  userId,
+  userName,
+  userEmail,
+  onIntakeComplete,
+}: DashboardProps) {
   const [progress, setProgress] = useState<UserProgress | null>(null);
+  const [selectedConditions, setSelectedConditions] = useState<SelectedCondition[]>([]);
+  const [assessmentResults, setAssessmentResults] = useState<Record<string, AssessmentResult[]>>(
+    {}
+  );
   const [loading, setLoading] = useState(true);
 
+  // Assessment modal state
+  const [assessmentModalOpen, setAssessmentModalOpen] = useState(false);
+  const [activeConditionId, setActiveConditionId] = useState<string | null>(null);
+  const [activeConditionName, setActiveConditionName] = useState<string>('');
+
   useEffect(() => {
-    fetchProgress();
-  }, []);
+    if (userId) fetchAllData();
+  }, [userId]);
 
-  const fetchProgress = async () => {
+  const fetchAllData = async () => {
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) return;
+      const res = await fetch('/api/user/dashboard');
+      if (!res.ok) return;
 
-      const { data } = await supabase
-        .from('user_progress')
-        .select('*')
-        .eq('user_id', user.id)
-        .single();
-
-      if (data) setProgress(data);
-    } catch {
-      // Silently fail — dashboard still works
+      const data = await res.json();
+      if (data.progress) setProgress(data.progress);
+      if (Array.isArray(data.selectedConditions)) {
+        setSelectedConditions(data.selectedConditions);
+      }
+      if (data.assessmentResults) {
+        setAssessmentResults(data.assessmentResults);
+      }
+    } catch (err) {
+      console.error('[Dashboard] Failed to fetch data:', err);
     } finally {
       setLoading(false);
     }
@@ -70,6 +113,32 @@ export default function Dashboard({ userName, userEmail, onIntakeComplete }: Das
 
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
+
+  // Calculate average score for a condition's latest assessment
+  const getLatestAverageScore = (conditionId: string) => {
+    const results = assessmentResults[conditionId];
+    if (!results || results.length === 0) return null;
+
+    // Get the most recent assessment date
+    const dates = results.map((r) => r.answered_at).sort();
+    const latestDate = dates[dates.length - 1];
+    const latestResults = results.filter((r) => r.answered_at === latestDate);
+
+    if (latestResults.length === 0) return null;
+
+    const avg = latestResults.reduce((sum, r) => sum + r.answer_value, 0) / latestResults.length;
+    return avg.toFixed(1);
+  };
+
+  // Get assessment count for a condition
+  const getAssessmentCount = (conditionId: string) => {
+    const results = assessmentResults[conditionId];
+    if (!results || results.length === 0) return 0;
+
+    // Count unique assessment dates
+    const dates = new Set(results.map((r) => r.answered_at.split('T')[0]));
+    return dates.size;
+  };
 
   return (
     <div className="flex flex-col flex-1 w-full max-w-4xl mx-auto px-6 py-12">
@@ -110,6 +179,82 @@ export default function Dashboard({ userName, userEmail, onIntakeComplete }: Das
               </p>
             </div>
           </div>
+
+          {/* Selected Conditions Progress */}
+          {selectedConditions.length > 0 && (
+            <div className="mb-10">
+              <h2 className="text-lg font-semibold text-foreground dark:text-white mb-4">
+                Your Focus Areas
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {selectedConditions.map((cond) => {
+                  const latestScore = getLatestAverageScore(cond.condition_id);
+                  const assessmentCount = getAssessmentCount(cond.condition_id);
+
+                  return (
+                    <div
+                      key={cond.id}
+                      className="rounded-xl border border-border bg-background p-5 dark:bg-navy hover:border-primary/30 transition-colors"
+                    >
+                      <div className="flex items-start justify-between mb-3">
+                        <div>
+                          <h3 className="font-medium text-foreground dark:text-white">
+                            {cond.conditions.name}
+                          </h3>
+                          <p className="text-xs text-muted mt-0.5">
+                            {cond.conditions.condition_categories?.name}
+                          </p>
+                        </div>
+                        {latestScore && (
+                          <div
+                            className={`px-2 py-1 rounded-full text-xs font-medium ${
+                              parseFloat(latestScore) <= 3
+                                ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400'
+                                : parseFloat(latestScore) <= 6
+                                  ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'
+                                  : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
+                            }`}
+                          >
+                            {latestScore}/10
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-4 text-xs text-muted">
+                        <span>
+                          {assessmentCount} assessment{assessmentCount !== 1 ? 's' : ''}
+                        </span>
+                        <span>•</span>
+                        <span>Selected {new Date(cond.date_selected).toLocaleDateString()}</span>
+                      </div>
+
+                      {cond.conditions.short_description && (
+                        <p className="mt-3 text-sm text-muted line-clamp-2">
+                          {cond.conditions.short_description}
+                        </p>
+                      )}
+
+                      <div className="mt-4 flex gap-2">
+                        <button
+                          onClick={() => {
+                            setActiveConditionId(cond.condition_id);
+                            setActiveConditionName(cond.conditions.name);
+                            setAssessmentModalOpen(true);
+                          }}
+                          className="px-3 py-1.5 text-xs font-medium rounded-lg bg-primary text-white hover:bg-primary-dark transition-colors dark:bg-primary-light dark:hover:bg-primary"
+                        >
+                          Take Assessment
+                        </button>
+                        <button className="px-3 py-1.5 text-xs font-medium rounded-lg border border-border hover:bg-muted/5 transition-colors">
+                          View Progress
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           {/* Available sessions */}
           <div className="mb-10">
@@ -191,6 +336,37 @@ export default function Dashboard({ userName, userEmail, onIntakeComplete }: Das
           </div>
         </>
       )}
+
+      {/* Assessment Modal */}
+      <Modal
+        isOpen={assessmentModalOpen}
+        onClose={() => {
+          setAssessmentModalOpen(false);
+          setActiveConditionId(null);
+          setActiveConditionName('');
+        }}
+        title="Assessment"
+        size="lg"
+      >
+        {activeConditionId && (
+          <AssessmentRenderer
+            conditionId={activeConditionId}
+            conditionName={activeConditionName}
+            onComplete={() => {
+              setAssessmentModalOpen(false);
+              setActiveConditionId(null);
+              setActiveConditionName('');
+              // Refresh dashboard data to show updated scores
+              fetchAllData();
+            }}
+            onCancel={() => {
+              setAssessmentModalOpen(false);
+              setActiveConditionId(null);
+              setActiveConditionName('');
+            }}
+          />
+        )}
+      </Modal>
     </div>
   );
 }
