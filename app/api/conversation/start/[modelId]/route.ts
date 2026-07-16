@@ -31,10 +31,7 @@ export async function POST(
     }
 
     if (!knowledgeModelId) {
-      return NextResponse.json(
-        { error: 'knowledge_model_id is required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'knowledge_model_id is required' }, { status: 400 });
     }
 
     const result = await startConversation(userId, knowledgeModelId);
@@ -46,10 +43,13 @@ export async function POST(
       );
     }
 
-    return NextResponse.json({
-      conversation_id: result.conversationId,
-      state: result.state,
-    }, { status: 201 });
+    return NextResponse.json(
+      {
+        conversation_id: result.conversationId,
+        state: result.state,
+      },
+      { status: 201 }
+    );
   } catch (err) {
     console.error('[api/conversation/start] POST error:', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

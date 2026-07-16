@@ -36,10 +36,7 @@ export async function GET(
 
     const km = await loadKnowledgeModel(conversation.knowledge_model_id);
     if (!km) {
-      return NextResponse.json(
-        { error: 'Knowledge Model not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Knowledge Model not found' }, { status: 404 });
     }
 
     const state = await getConversationState(sessionId, km);

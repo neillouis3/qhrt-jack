@@ -2,7 +2,11 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { requireUser } from '@/lib/adminAuth';
 import { supabaseServer } from '@/lib/supabaseClient';
-import { processResponse, loadKnowledgeModel, getConversationState } from '@/lib/conversationEngine';
+import {
+  processResponse,
+  loadKnowledgeModel,
+  getConversationState,
+} from '@/lib/conversationEngine';
 
 /**
  * POST — Submit a response and receive the next prompt.
@@ -36,10 +40,7 @@ export async function POST(
     }
 
     if (conversation.status === 'completed') {
-      return NextResponse.json(
-        { error: 'Conversation is already completed' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Conversation is already completed' }, { status: 400 });
     }
 
     const body = await request.json();
@@ -58,10 +59,7 @@ export async function POST(
     const state = await processResponse(sessionId, prompt_id, response_value);
 
     if (!state) {
-      return NextResponse.json(
-        { error: 'Failed to process response' },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: 'Failed to process response' }, { status: 500 });
     }
 
     return NextResponse.json({ state });

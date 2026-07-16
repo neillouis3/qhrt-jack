@@ -37,10 +37,7 @@ export async function POST(
     const result = await completeConversation(sessionId);
 
     if (!result) {
-      return NextResponse.json(
-        { error: 'Failed to complete conversation' },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: 'Failed to complete conversation' }, { status: 500 });
     }
 
     return NextResponse.json(result);
