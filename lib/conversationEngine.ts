@@ -53,8 +53,8 @@ export async function loadKnowledgeModel(
   }
 
   // --- Parallel fetch: all remaining queries are independent ---
-  const promptIds = prompts.map((p) => p.id);
-  const dimIds = dimensions.map((d) => d.id);
+  const promptIds: string[] = prompts.map((p: { id: string }) => p.id);
+  const dimIds: string[] = dimensions.map((d: { id: string }) => d.id);
 
   const [optionsResult, branchRulesResult, compRulesResult, fieldsResult] = await Promise.all([
     // Response options
@@ -168,6 +168,7 @@ export async function startConversation(
   }
 
   const state = await getConversationState(conversation.id, km);
+  if (!state) return null;
   return { conversationId: conversation.id, state };
 }
 
@@ -282,7 +283,7 @@ export async function processResponse(
 // ----------------------------------------------------------------------------
 export async function getConversationState(
   conversationId: string,
-  km: Awaited<ReturnType<typeof loadKnowledgeModel>>
+  km: LoadedKM
 ): Promise<ConversationState | null> {
   // Fetch conversation record
   const { data: conversation, error: convError } = await supabaseServer
@@ -438,9 +439,10 @@ export async function listUserConversations(userId: string): Promise<any[]> {
   }
 
   // Flatten the nested knowledge_models into knowledge_model_name
-  return (data ?? []).map((conv) => ({
+  return (data ?? []).map((conv: Record<string, unknown>) => ({
     ...conv,
-    knowledge_model_name: conv.knowledge_models?.name ?? 'Unknown',
+    knowledge_model_name: ((conv.knowledge_models as { name?: string })?.name ??
+      'Unknown') as string,
   }));
 }
 
@@ -448,10 +450,10 @@ export async function listUserConversations(userId: string): Promise<any[]> {
 // Internal Helpers
 // ============================================================================
 
+type LoadedKM = NonNullable<Awaited<ReturnType<typeof loadKnowledgeModel>>>;
+
 /** Load Knowledge Model for a conversation by resolving the knowledge_model_id */
-async function loadKnowledgeModelForConversation(
-  conversationId: string
-): Promise<Awaited<ReturnType<typeof loadKnowledgeModel>> | null> {
+async function loadKnowledgeModelForConversation(conversationId: string): Promise<LoadedKM | null> {
   const { data: conv } = await supabaseServer
     .from('conversations')
     .select('knowledge_model_id')
@@ -459,7 +461,9 @@ async function loadKnowledgeModelForConversation(
     .single();
 
   if (!conv) return null;
-  return loadKnowledgeModel(conv.knowledge_model_id);
+  const km = await loadKnowledgeModel(conv.knowledge_model_id);
+  if (!km) return null;
+  return km;
 }
 
 /** Create evidence record from a response using evidence field mappings */
@@ -468,7 +472,7 @@ async function createEvidenceFromResponse(
   responseId: string,
   promptId: string,
   responseValue: string,
-  km: Awaited<ReturnType<typeof loadKnowledgeModel>>
+  km: LoadedKM
 ): Promise<void> {
   const evidenceField = km.evidenceFields.find((ef) => ef.prompt_id === promptId);
   if (!evidenceField) return;
@@ -487,7 +491,7 @@ async function createEvidenceFromResponse(
 function evaluateBranchRulesForPrompt(
   promptId: string,
   responseValue: string,
-  km: Awaited<ReturnType<typeof loadKnowledgeModel>>
+  km: LoadedKM
 ): string | null {
   const rules = km.branchRules[promptId];
   if (!rules || rules.length === 0) return null;
@@ -530,7 +534,7 @@ function evaluateCondition(expr: ConditionExpression, responseValue: string): bo
 
 /** Evaluate completion state for all dimensions */
 function evaluateDimensionCompletion(
-  km: Awaited<ReturnType<typeof loadKnowledgeModel>>,
+  km: LoadedKM,
   answeredPromptKeys: Set<string>,
   skippedPromptIds?: Set<string>
 ): DimensionCompletionState[] {
@@ -586,7 +590,7 @@ function allRequiredDimensionsComplete(dimensions: DimensionCompletionState[]): 
  *   in the source dimension are marked skipped (the branch rule effectively completed that dimension).
  */
 function computeSkippedPrompts(
-  km: Awaited<ReturnType<typeof loadKnowledgeModel>>,
+  km: LoadedKM,
   conversation: any,
   answeredPromptIds: Set<string>,
   responses: ConversationResponse[]
@@ -653,7 +657,7 @@ function computeSkippedPrompts(
  *                          be treated as "satisfied" for completion but never re-presented.
  */
 function findNextPrompt(
-  km: Awaited<ReturnType<typeof loadKnowledgeModel>>,
+  km: LoadedKM,
   answeredPromptKeys: Set<string>,
   currentDisplayOrder?: number,
   skippedPromptIds?: Set<string>
