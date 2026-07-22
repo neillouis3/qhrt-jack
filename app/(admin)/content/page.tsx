@@ -147,7 +147,12 @@ type TabKey =
   | 'evidence-dimensions'
   | 'prompts'
   | 'branch-rules'
-  | 'completion-rules';
+  | 'completion-rules'
+  | 'phase-templates'
+  | 'functional-domains'
+  | 'aee-catalog'
+  | 'personal-programs'
+  | 'therapeutic-engines';
 
 // ---------------------------------------------------------------------------
 // Sidebar configuration
@@ -419,6 +424,107 @@ const SIDEBAR_GROUPS: NavGroup[] = [
       },
     ],
   },
+  {
+    key: 'therapeutic-engine',
+    label: 'Therapeutic Engine',
+    items: [
+      {
+        key: 'phase-templates',
+        label: 'Phase Templates',
+        icon: (
+          <svg
+            className="w-4 h-4"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={1.5}
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25z"
+            />
+          </svg>
+        ),
+      },
+      {
+        key: 'functional-domains',
+        label: 'Functional Domains',
+        icon: (
+          <svg
+            className="w-4 h-4"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={1.5}
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12c0 .778-.059 1.533-.174 2.253m0 0A17.919 17.919 0 0112 16.5c-3.162 0-6.133-.815-8.756-2.247M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+            />
+          </svg>
+        ),
+      },
+      {
+        key: 'aee-catalog',
+        label: 'AEE Catalog',
+        icon: (
+          <svg
+            className="w-4 h-4"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={1.5}
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 5.227 5.97 9.75 12 9.75s12-4.523 12-9.75z"
+            />
+          </svg>
+        ),
+      },
+      {
+        key: 'personal-programs',
+        label: 'Personal Programs',
+        icon: (
+          <svg
+            className="w-4 h-4"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={1.5}
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"
+            />
+          </svg>
+        ),
+      },
+      {
+        key: 'therapeutic-engines',
+        label: 'Active Sessions',
+        icon: (
+          <svg
+            className="w-4 h-4"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={1.5}
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v c0 .621-.504 1.125-1.125 1.125h-2.25A1.125 1.125 0 013 13.125zM6 7.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v c0 .621-.504 1.125-1.125 1.125h-2.25A1.125 1.125 0 016 7.875zM6 3a1.125 1.125 0 00-1.125 1.125v c0 .621.504 1.125 1.125 1.125h2.25C8.875 5.25 9.379 4.746 9.379 4.125v c0-.621-.504-1.125-1.125-1.125H6zM14.25 8.625c0-.621.504-1.125 1.125-1.125h2.25C18.246 7.5 18.75 8.004 18.75 8.625v c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125zM14.25 13.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125zM16.5 7.5a2.25 2.25 0 00-2.25 2.25v5.25a2.25 2.25 0 002.25 2.25h5.25a2.25 2.25 0 002.25-2.25v-5.25a2.25 2.25 0 00-2.25-2.25h-5.25z"
+            />
+          </svg>
+        ),
+      },
+    ],
+  },
 ];
 
 const TAB_LABELS: Record<TabKey, string> = {
@@ -435,6 +541,11 @@ const TAB_LABELS: Record<TabKey, string> = {
   prompts: 'Prompts',
   'branch-rules': 'Branch Rules',
   'completion-rules': 'Completion Rules',
+  'phase-templates': 'Phase Templates',
+  'functional-domains': 'Functional Domain Protocols',
+  'aee-catalog': 'AEE Catalog',
+  'personal-programs': 'Personal Implementation Programs',
+  'therapeutic-engines': 'Active Therapeutic Sessions',
 };
 
 // ---------------------------------------------------------------------------
@@ -3676,6 +3787,1002 @@ function CompletionRulesTab({
 }
 
 // ---------------------------------------------------------------------------
+// Phase Templates Tab
+// ---------------------------------------------------------------------------
+
+function PhaseTemplatesTab({
+  showToast,
+}: {
+  showToast: (msg: string, type: 'success' | 'error') => void;
+}) {
+  const [templates, setTemplates] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [formValues, setFormValues] = useState<Record<string, string>>({});
+
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fetch('/api/admin/phase-templates');
+      setTemplates((await res.json()).phase_templates ?? []);
+    } catch (err) {
+      console.error(err);
+      showToast('Failed to load phase templates', 'error');
+    } finally {
+      setLoading(false);
+    }
+  }, [showToast]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  const openCreate = () => {
+    setFormValues({});
+    setEditingId(null);
+    setModalOpen(true);
+  };
+
+  const openEdit = (item: any) => {
+    setFormValues({
+      id: item.id,
+      phase_order: String(item.phase_order),
+      phase_key: item.phase_key || '',
+      name: item.name || '',
+      description: item.description || '',
+      client_script: item.client_script || '',
+      practitioner_protocol: item.practitioner_protocol || '',
+      transition_rule_description: item.transition_rule_description || '',
+    });
+    setEditingId(item.id);
+    setModalOpen(true);
+  };
+
+  const handleSubmit = async () => {
+    try {
+      const body: Record<string, any> = { ...formValues };
+      if (body.phase_order) body.phase_order = parseInt(body.phase_order, 10);
+      await fetch('/api/admin/phase-templates', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      showToast(editingId ? 'Phase template updated' : 'Phase template created', 'success');
+      setModalOpen(false);
+      fetchData();
+    } catch {
+      showToast('Operation failed', 'error');
+    }
+  };
+
+  return (
+    <ContentErrorBoundary fallbackTitle="Phase Templates failed to load">
+      <div>
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-lg font-semibold">Phase Templates</h3>
+          <button
+            onClick={openCreate}
+            className="px-4 py-2 text-sm font-medium rounded-lg bg-primary text-white hover:bg-primary-dark transition-colors flex items-center gap-2"
+          >
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+            </svg>
+            Add Phase Template
+          </button>
+        </div>
+
+        {loading ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full" />
+          </div>
+        ) : templates.length === 0 ? (
+          <div className="rounded-xl border border-border bg-background p-8 text-center dark:bg-navy">
+            <p className="text-muted dark:text-gray-400">No phase templates configured yet.</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto rounded-xl border border-border dark:border-gray-700">
+            <table className="w-full text-sm">
+              <thead className="bg-muted/50 dark:bg-navy-light">
+                <tr>
+                  <th className="px-4 py-3 text-left font-medium">#</th>
+                  <th className="px-4 py-3 text-left font-medium">Key</th>
+                  <th className="px-4 py-3 text-left font-medium">Name</th>
+                  <th className="px-4 py-3 text-left font-medium">Client Script</th>
+                  <th className="px-4 py-3 text-right font-medium">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {templates.map((t) => (
+                  <tr key={t.id} className="border-t border-border dark:border-gray-700">
+                    <td className="px-4 py-3">{t.phase_order}</td>
+                    <td className="px-4 py-3 font-mono text-xs">{t.phase_key}</td>
+                    <td className="px-4 py-3">{t.name}</td>
+                    <td className="px-4 py-3 max-w-xs truncate text-muted dark:text-gray-400">
+                      {t.client_script || '—'}
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <button
+                        onClick={() => openEdit(t)}
+                        className="px-2 py-1 text-xs text-muted hover:text-foreground transition-colors"
+                      >
+                        Edit
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        <Modal
+          isOpen={modalOpen}
+          onClose={() => setModalOpen(false)}
+          title={editingId ? 'Edit Phase Template' : 'Add Phase Template'}
+          size="lg"
+        >
+          <div className="flex flex-col gap-4">
+            {!editingId && (
+              <>
+                <div className="flex flex-col gap-1">
+                  <label className="text-sm font-medium text-muted dark:text-gray-400">
+                    Phase Order
+                  </label>
+                  <input
+                    type="number"
+                    value={formValues.phase_order || ''}
+                    onChange={(e) => setFormValues({ ...formValues, phase_order: e.target.value })}
+                    className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm dark:bg-navy dark:text-white"
+                    placeholder="1–8"
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-sm font-medium text-muted dark:text-gray-400">
+                    Phase Key
+                  </label>
+                  <input
+                    type="text"
+                    value={formValues.phase_key || ''}
+                    onChange={(e) => setFormValues({ ...formValues, phase_key: e.target.value })}
+                    className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm dark:bg-navy dark:text-white"
+                    placeholder="e.g. conscious_regulatory_activation"
+                  />
+                </div>
+              </>
+            )}
+            <div className="flex flex-col gap-1">
+              <label className="text-sm font-medium text-muted dark:text-gray-400">Name</label>
+              <input
+                type="text"
+                value={formValues.name || ''}
+                onChange={(e) => setFormValues({ ...formValues, name: e.target.value })}
+                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm dark:bg-navy dark:text-white"
+                placeholder="Phase display name"
+              />
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-sm font-medium text-muted dark:text-gray-400">
+                Description
+              </label>
+              <textarea
+                value={formValues.description || ''}
+                onChange={(e) => setFormValues({ ...formValues, description: e.target.value })}
+                rows={2}
+                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm dark:bg-navy dark:text-white"
+              />
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-sm font-medium text-muted dark:text-gray-400">
+                Client Script (streamlined prompt)
+              </label>
+              <textarea
+                value={formValues.client_script || ''}
+                onChange={(e) => setFormValues({ ...formValues, client_script: e.target.value })}
+                rows={3}
+                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm dark:bg-navy dark:text-white"
+              />
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-sm font-medium text-muted dark:text-gray-400">
+                Practitioner Protocol (admin-only)
+              </label>
+              <textarea
+                value={formValues.practitioner_protocol || ''}
+                onChange={(e) =>
+                  setFormValues({ ...formValues, practitioner_protocol: e.target.value })
+                }
+                rows={3}
+                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm dark:bg-navy dark:text-white"
+              />
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-sm font-medium text-muted dark:text-gray-400">
+                Transition Rule Description
+              </label>
+              <textarea
+                value={formValues.transition_rule_description || ''}
+                onChange={(e) =>
+                  setFormValues({ ...formValues, transition_rule_description: e.target.value })
+                }
+                rows={2}
+                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm dark:bg-navy dark:text-white"
+              />
+            </div>
+            <div className="flex gap-3 justify-end mt-2">
+              <button
+                onClick={() => setModalOpen(false)}
+                className="px-4 py-2 border border-border rounded-lg text-sm text-muted hover:text-foreground transition-colors dark:border-gray-700"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSubmit}
+                className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-dark transition-colors"
+              >
+                {editingId ? 'Update' : 'Create'}
+              </button>
+            </div>
+          </div>
+        </Modal>
+      </div>
+    </ContentErrorBoundary>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Functional Domains Tab
+// ---------------------------------------------------------------------------
+
+function FunctionalDomainsTab({
+  showToast,
+}: {
+  showToast: (msg: string, type: 'success' | 'error') => void;
+}) {
+  const [domains, setDomains] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [formValues, setFormValues] = useState<Record<string, string>>({});
+
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fetch('/api/admin/domain-protocols');
+      setDomains((await res.json()).functional_domain_protocols ?? []);
+    } catch (err) {
+      console.error(err);
+      showToast('Failed to load functional domains', 'error');
+    } finally {
+      setLoading(false);
+    }
+  }, [showToast]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  const openCreate = () => {
+    setFormValues({});
+    setEditingId(null);
+    setModalOpen(true);
+  };
+
+  const openEdit = (item: any) => {
+    setFormValues({
+      id: item.id,
+      name: item.name || '',
+      description: item.description || '',
+      delivery_content:
+        typeof item.delivery_content === 'string'
+          ? item.delivery_content
+          : JSON.stringify(item.delivery_content || {}),
+    });
+    setEditingId(item.id);
+    setModalOpen(true);
+  };
+
+  const handleSubmit = async () => {
+    try {
+      const body: Record<string, any> = { ...formValues };
+      try {
+        body.delivery_content = JSON.parse(String(formValues.delivery_content));
+      } catch {
+        body.delivery_content = {};
+      }
+      if (editingId) {
+        body.id = editingId;
+      }
+      await fetch('/api/admin/domain-protocols', {
+        method: editingId ? 'PATCH' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      showToast(editingId ? 'Domain updated' : 'Domain created', 'success');
+      setModalOpen(false);
+      fetchData();
+    } catch {
+      showToast('Operation failed', 'error');
+    }
+  };
+
+  return (
+    <ContentErrorBoundary fallbackTitle="Functional Domains failed to load">
+      <div>
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-lg font-semibold">Functional Domain Protocols</h3>
+          <button
+            onClick={openCreate}
+            className="px-4 py-2 text-sm font-medium rounded-lg bg-primary text-white hover:bg-primary-dark transition-colors flex items-center gap-2"
+          >
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+            </svg>
+            Add Domain
+          </button>
+        </div>
+
+        {loading ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full" />
+          </div>
+        ) : domains.length === 0 ? (
+          <div className="rounded-xl border border-border bg-background p-8 text-center dark:bg-navy">
+            <p className="text-muted dark:text-gray-400">No functional domains configured yet.</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto rounded-xl border border-border dark:border-gray-700">
+            <table className="w-full text-sm">
+              <thead className="bg-muted/50 dark:bg-navy-light">
+                <tr>
+                  <th className="px-4 py-3 text-left font-medium">Name</th>
+                  <th className="px-4 py-3 text-left font-medium">Description</th>
+                  <th className="px-4 py-3 text-center font-medium">Active</th>
+                  <th className="px-4 py-3 text-right font-medium">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {domains.map((d) => (
+                  <tr key={d.id} className="border-t border-border dark:border-gray-700">
+                    <td className="px-4 py-3 font-medium">{d.name}</td>
+                    <td className="px-4 py-3 max-w-xs truncate text-muted dark:text-gray-400">
+                      {d.description || '—'}
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      <span
+                        className={`px-2 py-1 rounded-full text-xs ${d.is_active ? 'bg-green-500/10 text-green-600 dark:text-green-400' : 'bg-red-500/10 text-red-600 dark:text-red-400'}`}
+                      >
+                        {d.is_active ? 'Active' : 'Inactive'}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <button
+                        onClick={() => openEdit(d)}
+                        className="px-2 py-1 text-xs text-muted hover:text-foreground transition-colors"
+                      >
+                        Edit
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        <Modal
+          isOpen={modalOpen}
+          onClose={() => setModalOpen(false)}
+          title={editingId ? 'Edit Functional Domain' : 'Add Functional Domain'}
+          size="lg"
+        >
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-1">
+              <label className="text-sm font-medium text-muted dark:text-gray-400">Name</label>
+              <input
+                type="text"
+                value={formValues.name || ''}
+                onChange={(e) => setFormValues({ ...formValues, name: e.target.value })}
+                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm dark:bg-navy dark:text-white"
+                placeholder="e.g. Body Composition"
+              />
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-sm font-medium text-muted dark:text-gray-400">
+                Description
+              </label>
+              <textarea
+                value={formValues.description || ''}
+                onChange={(e) => setFormValues({ ...formValues, description: e.target.value })}
+                rows={2}
+                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm dark:bg-navy dark:text-white"
+              />
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-sm font-medium text-muted dark:text-gray-400">
+                Delivery Content (JSON)
+              </label>
+              <textarea
+                value={formValues.delivery_content || '{}'}
+                onChange={(e) => setFormValues({ ...formValues, delivery_content: e.target.value })}
+                rows={6}
+                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm font-mono dark:bg-navy dark:text-white"
+                placeholder='{"phase_key": {"client_script": "..."}}'
+              />
+            </div>
+            <div className="flex gap-3 justify-end mt-2">
+              <button
+                onClick={() => setModalOpen(false)}
+                className="px-4 py-2 border border-border rounded-lg text-sm text-muted hover:text-foreground transition-colors dark:border-gray-700"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSubmit}
+                className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-dark transition-colors"
+              >
+                {editingId ? 'Update' : 'Create'}
+              </button>
+            </div>
+          </div>
+        </Modal>
+      </div>
+    </ContentErrorBoundary>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// AEE Catalog Tab
+// ---------------------------------------------------------------------------
+
+function AeeCatalogTab({
+  showToast,
+}: {
+  showToast: (msg: string, type: 'success' | 'error') => void;
+}) {
+  const [entries, setEntries] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [formValues, setFormValues] = useState<Record<string, string>>({});
+
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fetch('/api/admin/aee');
+      setEntries((await res.json()).aee_entries ?? []);
+    } catch (err) {
+      console.error(err);
+      showToast('Failed to load AEE entries', 'error');
+    } finally {
+      setLoading(false);
+    }
+  }, [showToast]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  const openCreate = () => {
+    setFormValues({});
+    setEditingId(null);
+    setModalOpen(true);
+  };
+
+  const openEdit = (item: any) => {
+    setFormValues({
+      id: item.id,
+      name: item.name || '',
+      description: item.description || '',
+      resolution_prompts:
+        typeof item.resolution_prompts === 'string'
+          ? item.resolution_prompts
+          : JSON.stringify(item.resolution_prompts || {}),
+    });
+    setEditingId(item.id);
+    setModalOpen(true);
+  };
+
+  const handleSubmit = async () => {
+    try {
+      const body: Record<string, any> = { ...formValues };
+      try {
+        body.resolution_prompts = JSON.parse(String(formValues.resolution_prompts));
+      } catch {
+        body.resolution_prompts = {};
+      }
+      if (editingId) body.id = editingId;
+      await fetch('/api/admin/aee', {
+        method: editingId ? 'PATCH' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      showToast(editingId ? 'AEE entry updated' : 'AEE entry created', 'success');
+      setModalOpen(false);
+      fetchData();
+    } catch {
+      showToast('Operation failed', 'error');
+    }
+  };
+
+  return (
+    <ContentErrorBoundary fallbackTitle="AEE Catalog failed to load">
+      <div>
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-lg font-semibold">Archetypal Emotional Energetics</h3>
+          <button
+            onClick={openCreate}
+            className="px-4 py-2 text-sm font-medium rounded-lg bg-primary text-white hover:bg-primary-dark transition-colors flex items-center gap-2"
+          >
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+            </svg>
+            Add AEE Entry
+          </button>
+        </div>
+
+        {loading ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full" />
+          </div>
+        ) : entries.length === 0 ? (
+          <div className="rounded-xl border border-border bg-background p-8 text-center dark:bg-navy">
+            <p className="text-muted dark:text-gray-400">No AEE entries configured yet.</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto rounded-xl border border-border dark:border-gray-700">
+            <table className="w-full text-sm">
+              <thead className="bg-muted/50 dark:bg-navy-light">
+                <tr>
+                  <th className="px-4 py-3 text-left font-medium">Name</th>
+                  <th className="px-4 py-3 text-left font-medium">Description</th>
+                  <th className="px-4 py-3 text-center font-medium">Active</th>
+                  <th className="px-4 py-3 text-right font-medium">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {entries.map((e) => (
+                  <tr key={e.id} className="border-t border-border dark:border-gray-700">
+                    <td className="px-4 py-3 font-medium">{e.name}</td>
+                    <td className="px-4 py-3 max-w-xs truncate text-muted dark:text-gray-400">
+                      {e.description || '—'}
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      <span
+                        className={`px-2 py-1 rounded-full text-xs ${e.is_active ? 'bg-green-500/10 text-green-600 dark:text-green-400' : 'bg-red-500/10 text-red-600 dark:text-red-400'}`}
+                      >
+                        {e.is_active ? 'Active' : 'Inactive'}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <button
+                        onClick={() => openEdit(e)}
+                        className="px-2 py-1 text-xs text-muted hover:text-foreground transition-colors"
+                      >
+                        Edit
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        <Modal
+          isOpen={modalOpen}
+          onClose={() => setModalOpen(false)}
+          title={editingId ? 'Edit AEE Entry' : 'Add AEE Entry'}
+          size="lg"
+        >
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-1">
+              <label className="text-sm font-medium text-muted dark:text-gray-400">Name</label>
+              <input
+                type="text"
+                value={formValues.name || ''}
+                onChange={(e) => setFormValues({ ...formValues, name: e.target.value })}
+                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm dark:bg-navy dark:text-white"
+                placeholder="e.g. Grief / Loss"
+              />
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-sm font-medium text-muted dark:text-gray-400">
+                Description
+              </label>
+              <textarea
+                value={formValues.description || ''}
+                onChange={(e) => setFormValues({ ...formValues, description: e.target.value })}
+                rows={2}
+                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm dark:bg-navy dark:text-white"
+              />
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-sm font-medium text-muted dark:text-gray-400">
+                Resolution Prompts (JSON)
+              </label>
+              <textarea
+                value={formValues.resolution_prompts || '{}'}
+                onChange={(e) =>
+                  setFormValues({ ...formValues, resolution_prompts: e.target.value })
+                }
+                rows={6}
+                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm font-mono dark:bg-navy dark:text-white"
+                placeholder='{"resolution_intro": "...", "resolution_prompts": [...]}'
+              />
+            </div>
+            <div className="flex gap-3 justify-end mt-2">
+              <button
+                onClick={() => setModalOpen(false)}
+                className="px-4 py-2 border border-border rounded-lg text-sm text-muted hover:text-foreground transition-colors dark:border-gray-700"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSubmit}
+                className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-dark transition-colors"
+              >
+                {editingId ? 'Update' : 'Create'}
+              </button>
+            </div>
+          </div>
+        </Modal>
+      </div>
+    </ContentErrorBoundary>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Personal Programs Tab
+// ---------------------------------------------------------------------------
+
+function PersonalProgramsTab({
+  showToast,
+}: {
+  showToast: (msg: string, type: 'success' | 'error') => void;
+}) {
+  const [programs, setPrograms] = useState<any[]>([]);
+  const [domains, setDomains] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [formValues, setFormValues] = useState<Record<string, string>>({});
+
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [progRes, domRes] = await Promise.all([
+        fetch('/api/admin/personal-programs'),
+        fetch('/api/admin/domain-protocols'),
+      ]);
+      setPrograms((await progRes.json()).personal_programs ?? []);
+      setDomains((await domRes.json()).functional_domain_protocols ?? []);
+    } catch (err) {
+      console.error(err);
+      showToast('Failed to load personal programs', 'error');
+    } finally {
+      setLoading(false);
+    }
+  }, [showToast]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  const openCreate = () => {
+    setFormValues({});
+    setEditingId(null);
+    setModalOpen(true);
+  };
+
+  const openEdit = (item: any) => {
+    setFormValues({
+      id: item.id,
+      name: item.name || '',
+      description: item.description || '',
+      functional_domain_id: item.functional_domain_id || '',
+      delivery_content:
+        typeof item.delivery_content === 'string'
+          ? item.delivery_content
+          : JSON.stringify(item.delivery_content || {}),
+    });
+    setEditingId(item.id);
+    setModalOpen(true);
+  };
+
+  const handleSubmit = async () => {
+    try {
+      const body: Record<string, any> = { ...formValues };
+      if (!body.functional_domain_id) delete body.functional_domain_id;
+      try {
+        body.delivery_content = JSON.parse(String(formValues.delivery_content));
+      } catch {
+        body.delivery_content = {};
+      }
+      if (editingId) body.id = editingId;
+      await fetch('/api/admin/personal-programs', {
+        method: editingId ? 'PATCH' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      showToast(editingId ? 'Program updated' : 'Program created', 'success');
+      setModalOpen(false);
+      fetchData();
+    } catch {
+      showToast('Operation failed', 'error');
+    }
+  };
+
+  const domainNameMap = Object.fromEntries(domains.map((d) => [d.id, d.name]));
+
+  return (
+    <ContentErrorBoundary fallbackTitle="Personal Programs failed to load">
+      <div>
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-lg font-semibold">Personal Implementation Programs</h3>
+          <button
+            onClick={openCreate}
+            className="px-4 py-2 text-sm font-medium rounded-lg bg-primary text-white hover:bg-primary-dark transition-colors flex items-center gap-2"
+          >
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+            </svg>
+            Add Program
+          </button>
+        </div>
+
+        {loading ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full" />
+          </div>
+        ) : programs.length === 0 ? (
+          <div className="rounded-xl border border-border bg-background p-8 text-center dark:bg-navy">
+            <p className="text-muted dark:text-gray-400">No personal programs configured yet.</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto rounded-xl border border-border dark:border-gray-700">
+            <table className="w-full text-sm">
+              <thead className="bg-muted/50 dark:bg-navy-light">
+                <tr>
+                  <th className="px-4 py-3 text-left font-medium">Name</th>
+                  <th className="px-4 py-3 text-left font-medium">Functional Domain</th>
+                  <th className="px-4 py-3 text-center font-medium">Active</th>
+                  <th className="px-4 py-3 text-right font-medium">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {programs.map((p) => (
+                  <tr key={p.id} className="border-t border-border dark:border-gray-700">
+                    <td className="px-4 py-3 font-medium">{p.name}</td>
+                    <td className="px-4 py-3 text-muted dark:text-gray-400">
+                      {domainNameMap[p.functional_domain_id] || '—'}
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      <span
+                        className={`px-2 py-1 rounded-full text-xs ${p.is_active ? 'bg-green-500/10 text-green-600 dark:text-green-400' : 'bg-red-500/10 text-red-600 dark:text-red-400'}`}
+                      >
+                        {p.is_active ? 'Active' : 'Inactive'}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <button
+                        onClick={() => openEdit(p)}
+                        className="px-2 py-1 text-xs text-muted hover:text-foreground transition-colors"
+                      >
+                        Edit
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        <Modal
+          isOpen={modalOpen}
+          onClose={() => setModalOpen(false)}
+          title={editingId ? 'Edit Personal Program' : 'Add Personal Program'}
+          size="lg"
+        >
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-1">
+              <label className="text-sm font-medium text-muted dark:text-gray-400">Name</label>
+              <input
+                type="text"
+                value={formValues.name || ''}
+                onChange={(e) => setFormValues({ ...formValues, name: e.target.value })}
+                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm dark:bg-navy dark:text-white"
+                placeholder="Program name"
+              />
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-sm font-medium text-muted dark:text-gray-400">
+                Description
+              </label>
+              <textarea
+                value={formValues.description || ''}
+                onChange={(e) => setFormValues({ ...formValues, description: e.target.value })}
+                rows={2}
+                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm dark:bg-navy dark:text-white"
+              />
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-sm font-medium text-muted dark:text-gray-400">
+                Functional Domain (optional)
+              </label>
+              <select
+                value={formValues.functional_domain_id || ''}
+                onChange={(e) =>
+                  setFormValues({ ...formValues, functional_domain_id: e.target.value })
+                }
+                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm dark:bg-navy dark:text-white"
+              >
+                <option value="">None</option>
+                {domains.map((d) => (
+                  <option key={d.id} value={d.id}>
+                    {d.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-sm font-medium text-muted dark:text-gray-400">
+                Delivery Content (JSON)
+              </label>
+              <textarea
+                value={formValues.delivery_content || '{}'}
+                onChange={(e) => setFormValues({ ...formValues, delivery_content: e.target.value })}
+                rows={6}
+                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm font-mono dark:bg-navy dark:text-white"
+              />
+            </div>
+            <div className="flex gap-3 justify-end mt-2">
+              <button
+                onClick={() => setModalOpen(false)}
+                className="px-4 py-2 border border-border rounded-lg text-sm text-muted hover:text-foreground transition-colors dark:border-gray-700"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSubmit}
+                className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-dark transition-colors"
+              >
+                {editingId ? 'Update' : 'Create'}
+              </button>
+            </div>
+          </div>
+        </Modal>
+      </div>
+    </ContentErrorBoundary>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Therapeutic Engines (Active Sessions) Tab
+// ---------------------------------------------------------------------------
+
+function TherapeuticEnginesTab({
+  showToast,
+}: {
+  showToast: (msg: string, type: 'success' | 'error') => void;
+}) {
+  const [engines, setEngines] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fetch('/api/admin/therapeutic-engines');
+      setEngines((await res.json()).therapeutic_engines ?? []);
+    } catch (err) {
+      console.error(err);
+      showToast('Failed to load therapeutic engines', 'error');
+    } finally {
+      setLoading(false);
+    }
+  }, [showToast]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  const statusBadge = (status: string) => {
+    switch (status) {
+      case 'completed':
+        return 'bg-green-500/10 text-green-600 dark:text-green-400';
+      case 'running':
+        return 'bg-blue-500/10 text-blue-600 dark:text-blue-400';
+      case 'paused':
+        return 'bg-yellow-500/10 text-yellow-600 dark:text-yellow-400';
+      default:
+        return 'bg-gray-500/10 text-gray-600 dark:text-gray-400';
+    }
+  };
+
+  return (
+    <ContentErrorBoundary fallbackTitle="Active Sessions failed to load">
+      <div>
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-lg font-semibold">Active Therapeutic Sessions</h3>
+          <button
+            onClick={fetchData}
+            className="px-4 py-2 text-sm font-medium rounded-lg border border-border text-muted hover:text-foreground transition-colors dark:border-gray-700"
+          >
+            Refresh
+          </button>
+        </div>
+
+        {loading ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full" />
+          </div>
+        ) : engines.length === 0 ? (
+          <div className="rounded-xl border border-border bg-background p-8 text-center dark:bg-navy">
+            <p className="text-muted dark:text-gray-400">No therapeutic engine sessions yet.</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto rounded-xl border border-border dark:border-gray-700">
+            <table className="w-full text-sm">
+              <thead className="bg-muted/50 dark:bg-navy-light">
+                <tr>
+                  <th className="px-4 py-3 text-left font-medium">User ID</th>
+                  <th className="px-4 py-3 text-left font-medium">Current Phase</th>
+                  <th className="px-4 py-3 text-center font-medium">Status</th>
+                  <th className="px-4 py-3 text-left font-medium">Started</th>
+                </tr>
+              </thead>
+              <tbody>
+                {engines.map((e) => (
+                  <tr key={e.id} className="border-t border-border dark:border-gray-700">
+                    <td className="px-4 py-3 font-mono text-xs">{e.user_id.slice(0, 8)}...</td>
+                    <td className="px-4 py-3">Phase {e.current_phase_order}</td>
+                    <td className="px-4 py-3 text-center">
+                      <span
+                        className={`px-2 py-1 rounded-full text-xs font-medium ${statusBadge(e.status)}`}
+                      >
+                        {e.status}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-muted dark:text-gray-400">
+                      {new Date(e.created_at).toLocaleDateString()}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </ContentErrorBoundary>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Main Page Component
 // ---------------------------------------------------------------------------
 
@@ -3797,6 +4904,11 @@ export default function AdminContentPage() {
           {activeTab === 'prompts' && <PromptsTab showToast={showToast} />}
           {activeTab === 'branch-rules' && <BranchRulesTab showToast={showToast} />}
           {activeTab === 'completion-rules' && <CompletionRulesTab showToast={showToast} />}
+          {activeTab === 'phase-templates' && <PhaseTemplatesTab showToast={showToast} />}
+          {activeTab === 'functional-domains' && <FunctionalDomainsTab showToast={showToast} />}
+          {activeTab === 'aee-catalog' && <AeeCatalogTab showToast={showToast} />}
+          {activeTab === 'personal-programs' && <PersonalProgramsTab showToast={showToast} />}
+          {activeTab === 'therapeutic-engines' && <TherapeuticEnginesTab showToast={showToast} />}
         </div>
 
         {/* Toast */}
