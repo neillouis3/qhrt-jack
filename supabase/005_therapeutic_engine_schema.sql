@@ -10,8 +10,137 @@
 -- ----------------------------------------------------------------------------
 
 -- ============================================================================
--- 1. therapeutic_engines
+-- 1. phase_templates
+-- Admin-manageable templates for the 8 universal phases
+-- Defines default phase_key, name, description, client_script, practitioner_protocol
+-- New engine instances are initialized from these templates
+-- (No dependencies on other new tables)
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS phase_templates (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  phase_order INT NOT NULL CHECK (phase_order >= 1 AND phase_order <= 8),
+  phase_key TEXT NOT NULL UNIQUE,
+  name TEXT NOT NULL,
+  description TEXT,
+  client_script TEXT,
+  practitioner_protocol TEXT,
+  transition_rule_description TEXT,
+  is_active BOOLEAN NOT NULL DEFAULT true,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+ALTER TABLE phase_templates ENABLE ROW LEVEL SECURITY;
+
+-- Admin full access only (phase templates are configuration)
+CREATE POLICY "Admin full access on phase_templates"
+  ON phase_templates FOR ALL
+  TO authenticated
+  USING (EXISTS (SELECT 1 FROM user_roles WHERE user_roles.user_id = auth.uid() AND user_roles.role = 'admin'))
+  WITH CHECK (EXISTS (SELECT 1 FROM user_roles WHERE user_roles.user_id = auth.uid() AND user_roles.role = 'admin'));
+
+-- Authenticated users can view active templates
+CREATE POLICY "Authenticated can view active phase_templates"
+  ON phase_templates FOR SELECT
+  TO authenticated
+  USING (is_active = true);
+
+-- ============================================================================
+-- 2. functional_domain_protocols
+-- Modular domain content (Body Composition, Pain, Energy, etc.)
+-- Each protocol contains delivery content keyed by phase for client-facing prompts
+-- (No dependencies on other new tables)
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS functional_domain_protocols (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name TEXT NOT NULL,
+  description TEXT,
+  delivery_content JSONB DEFAULT '{}',
+  is_active BOOLEAN NOT NULL DEFAULT true,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+ALTER TABLE functional_domain_protocols ENABLE ROW LEVEL SECURITY;
+
+-- Admin full access
+CREATE POLICY "Admin full access on functional_domain_protocols"
+  ON functional_domain_protocols FOR ALL
+  TO authenticated
+  USING (EXISTS (SELECT 1 FROM user_roles WHERE user_roles.user_id = auth.uid() AND user_roles.role = 'admin'))
+  WITH CHECK (EXISTS (SELECT 1 FROM user_roles WHERE user_roles.user_id = auth.uid() AND user_roles.role = 'admin'));
+
+-- Authenticated users can view active protocols
+CREATE POLICY "Authenticated can view active functional_domain_protocols"
+  ON functional_domain_protocols FOR SELECT
+  TO authenticated
+  USING (is_active = true);
+
+-- ============================================================================
+-- 3. archetypal_emotional_energetics
+-- AEE catalog — each entry contains resolution prompts for Phase 2
+-- (No dependencies on other new tables)
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS archetypal_emotional_energetics (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name TEXT NOT NULL,
+  description TEXT,
+  resolution_prompts JSONB DEFAULT '{}',
+  is_active BOOLEAN NOT NULL DEFAULT true,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+ALTER TABLE archetypal_emotional_energetics ENABLE ROW LEVEL SECURITY;
+
+-- Admin full access
+CREATE POLICY "Admin full access on archetypal_emotional_energetics"
+  ON archetypal_emotional_energetics FOR ALL
+  TO authenticated
+  USING (EXISTS (SELECT 1 FROM user_roles WHERE user_roles.user_id = auth.uid() AND user_roles.role = 'admin'))
+  WITH CHECK (EXISTS (SELECT 1 FROM user_roles WHERE user_roles.user_id = auth.uid() AND user_roles.role = 'admin'));
+
+-- Authenticated users can view active AEEs
+CREATE POLICY "Authenticated can view active archetypal_emotional_energetics"
+  ON archetypal_emotional_energetics FOR SELECT
+  TO authenticated
+  USING (is_active = true);
+
+-- ============================================================================
+-- 4. personal_implementation_programs
+-- Personal implementation content linked to a Functional Domain
+-- (Depends on: functional_domain_protocols)
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS personal_implementation_programs (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  functional_domain_id UUID REFERENCES functional_domain_protocols(id) ON DELETE SET NULL,
+  name TEXT NOT NULL,
+  description TEXT,
+  delivery_content JSONB DEFAULT '{}',
+  is_active BOOLEAN NOT NULL DEFAULT true,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+ALTER TABLE personal_implementation_programs ENABLE ROW LEVEL SECURITY;
+
+-- Admin full access
+CREATE POLICY "Admin full access on personal_implementation_programs"
+  ON personal_implementation_programs FOR ALL
+  TO authenticated
+  USING (EXISTS (SELECT 1 FROM user_roles WHERE user_roles.user_id = auth.uid() AND user_roles.role = 'admin'))
+  WITH CHECK (EXISTS (SELECT 1 FROM user_roles WHERE user_roles.user_id = auth.uid() AND user_roles.role = 'admin'));
+
+-- Authenticated users can view active programs
+CREATE POLICY "Authenticated can view active personal_implementation_programs"
+  ON personal_implementation_programs FOR SELECT
+  TO authenticated
+  USING (is_active = true);
+
+-- ============================================================================
+-- 5. therapeutic_engines
 -- Top-level engine instances linking a conversation to modular content objects
+-- (Depends on: functional_domain_protocols, archetypal_emotional_energetics, personal_implementation_programs)
 -- ============================================================================
 CREATE TABLE IF NOT EXISTS therapeutic_engines (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -49,9 +178,10 @@ CREATE POLICY "Users can manage own therapeutic_engines"
   WITH CHECK (user_id = auth.uid());
 
 -- ============================================================================
--- 2. therapeutic_phases
+-- 6. therapeutic_phases
 -- The 8 configurable phases of the Universal Therapeutic Engine
 -- Each engine instance gets its own set of phase rows tracking status
+-- (Depends on: therapeutic_engines)
 -- ============================================================================
 CREATE TABLE IF NOT EXISTS therapeutic_phases (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -92,97 +222,9 @@ CREATE POLICY "Users can manage own therapeutic_phases"
   WITH CHECK (EXISTS (SELECT 1 FROM therapeutic_engines WHERE therapeutic_engines.id = therapeutic_phases.engine_id AND therapeutic_engines.user_id = auth.uid()));
 
 -- ============================================================================
--- 3. functional_domain_protocols
--- Modular domain content (Body Composition, Pain, Energy, etc.)
--- Each protocol contains delivery content keyed by phase for client-facing prompts
--- ============================================================================
-CREATE TABLE IF NOT EXISTS functional_domain_protocols (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  name TEXT NOT NULL,
-  description TEXT,
-  delivery_content JSONB DEFAULT '{}',
-  is_active BOOLEAN NOT NULL DEFAULT true,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-
-ALTER TABLE functional_domain_protocols ENABLE ROW LEVEL SECURITY;
-
--- Admin full access
-CREATE POLICY "Admin full access on functional_domain_protocols"
-  ON functional_domain_protocols FOR ALL
-  TO authenticated
-  USING (EXISTS (SELECT 1 FROM user_roles WHERE user_roles.user_id = auth.uid() AND user_roles.role = 'admin'))
-  WITH CHECK (EXISTS (SELECT 1 FROM user_roles WHERE user_roles.user_id = auth.uid() AND user_roles.role = 'admin'));
-
--- Authenticated users can view active protocols
-CREATE POLICY "Authenticated can view active functional_domain_protocols"
-  ON functional_domain_protocols FOR SELECT
-  TO authenticated
-  USING (is_active = true);
-
--- ============================================================================
--- 4. archetypal_emotional_energetics
--- AEE catalog — each entry contains resolution prompts for Phase 2
--- ============================================================================
-CREATE TABLE IF NOT EXISTS archetypal_emotional_energetics (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  name TEXT NOT NULL,
-  description TEXT,
-  resolution_prompts JSONB DEFAULT '{}',
-  is_active BOOLEAN NOT NULL DEFAULT true,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-
-ALTER TABLE archetypal_emotional_energetics ENABLE ROW LEVEL SECURITY;
-
--- Admin full access
-CREATE POLICY "Admin full access on archetypal_emotional_energetics"
-  ON archetypal_emotional_energetics FOR ALL
-  TO authenticated
-  USING (EXISTS (SELECT 1 FROM user_roles WHERE user_roles.user_id = auth.uid() AND user_roles.role = 'admin'))
-  WITH CHECK (EXISTS (SELECT 1 FROM user_roles WHERE user_roles.user_id = auth.uid() AND user_roles.role = 'admin'));
-
--- Authenticated users can view active AEEs
-CREATE POLICY "Authenticated can view active archetypal_emotional_energetics"
-  ON archetypal_emotional_energetics FOR SELECT
-  TO authenticated
-  USING (is_active = true);
-
--- ============================================================================
--- 5. personal_implementation_programs
--- Personal implementation content linked to a Functional Domain
--- ============================================================================
-CREATE TABLE IF NOT EXISTS personal_implementation_programs (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  functional_domain_id UUID REFERENCES functional_domain_protocols(id) ON DELETE SET NULL,
-  name TEXT NOT NULL,
-  description TEXT,
-  delivery_content JSONB DEFAULT '{}',
-  is_active BOOLEAN NOT NULL DEFAULT true,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-
-ALTER TABLE personal_implementation_programs ENABLE ROW LEVEL SECURITY;
-
--- Admin full access
-CREATE POLICY "Admin full access on personal_implementation_programs"
-  ON personal_implementation_programs FOR ALL
-  TO authenticated
-  USING (EXISTS (SELECT 1 FROM user_roles WHERE user_roles.user_id = auth.uid() AND user_roles.role = 'admin'))
-  WITH CHECK (EXISTS (SELECT 1 FROM user_roles WHERE user_roles.user_id = auth.uid() AND user_roles.role = 'admin'));
-
--- Authenticated users can view active programs
-CREATE POLICY "Authenticated can view active personal_implementation_programs"
-  ON personal_implementation_programs FOR SELECT
-  TO authenticated
-  USING (is_active = true);
-
--- ============================================================================
--- 6. phase_observations
+-- 7. phase_observations
 -- Structured observation capture per phase at session completion
+-- (Depends on: therapeutic_engines)
 -- ============================================================================
 CREATE TABLE IF NOT EXISTS phase_observations (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -219,38 +261,3 @@ CREATE POLICY "Users can manage own phase_observations"
   TO authenticated
   USING (EXISTS (SELECT 1 FROM therapeutic_engines WHERE therapeutic_engines.id = phase_observations.therapeutic_engine_id AND therapeutic_engines.user_id = auth.uid()))
   WITH CHECK (EXISTS (SELECT 1 FROM therapeutic_engines WHERE therapeutic_engines.id = phase_observations.therapeutic_engine_id AND therapeutic_engines.user_id = auth.uid()));
-
--- ============================================================================
--- 7. phase_templates
--- Admin-manageable templates for the 8 universal phases
--- Defines default phase_key, name, description, client_script, practitioner_protocol
--- New engine instances are initialized from these templates
--- ============================================================================
-CREATE TABLE IF NOT EXISTS phase_templates (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  phase_order INT NOT NULL CHECK (phase_order >= 1 AND phase_order <= 8),
-  phase_key TEXT NOT NULL UNIQUE,
-  name TEXT NOT NULL,
-  description TEXT,
-  client_script TEXT,
-  practitioner_protocol TEXT,
-  transition_rule_description TEXT,
-  is_active BOOLEAN NOT NULL DEFAULT true,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-
-ALTER TABLE phase_templates ENABLE ROW LEVEL SECURITY;
-
--- Admin full access only (phase templates are configuration)
-CREATE POLICY "Admin full access on phase_templates"
-  ON phase_templates FOR ALL
-  TO authenticated
-  USING (EXISTS (SELECT 1 FROM user_roles WHERE user_roles.user_id = auth.uid() AND user_roles.role = 'admin'))
-  WITH CHECK (EXISTS (SELECT 1 FROM user_roles WHERE user_roles.user_id = auth.uid() AND user_roles.role = 'admin'));
-
--- Authenticated users can view active templates
-CREATE POLICY "Authenticated can view active phase_templates"
-  ON phase_templates FOR SELECT
-  TO authenticated
-  USING (is_active = true);
