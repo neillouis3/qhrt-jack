@@ -95,9 +95,9 @@ export default function Sessions() {
       const [modelsRes, convsRes, domainsRes, aeeRes, programsRes, enginesRes] = await Promise.all([
         fetch('/api/conversation/models'),
         fetch('/api/conversation/sessions'),
-        fetch('/api/admin/domain-protocols?activeOnly=true'),
-        fetch('/api/admin/aee?activeOnly=true'),
-        fetch('/api/admin/personal-programs?activeOnly=true'),
+        fetch('/api/therapeutic-engine/domains'),
+        fetch('/api/therapeutic-engine/aee'),
+        fetch('/api/therapeutic-engine/personal-programs'),
         fetch('/api/therapeutic-engine/user-sessions'),
       ]);
 

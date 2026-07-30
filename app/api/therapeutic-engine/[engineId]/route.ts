@@ -4,21 +4,20 @@
 // ============================================================================
 
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/ssr';
+import type { NextRequest } from 'next/server';
+import { requireUser } from '@/lib/adminAuth';
 import { getEngineSessionState } from '@/lib/therapeuticEngine';
 
-export async function GET(request: Request, { params }: { params: Promise<{ engineId: string }> }) {
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ engineId: string }> }
+) {
+  const userResult = await requireUser(request);
+  if (userResult instanceof NextResponse) return userResult;
+  if (!userResult) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
   try {
     const { engineId } = await params;
-    const supabase = createClient();
-
-    // Verify user is authenticated
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
 
     // Get engine state
     const state = await getEngineSessionState(engineId);
@@ -27,7 +26,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ engi
     }
 
     // Verify ownership
-    if (state.engine.user_id !== user.id) {
+    if (state.engine.user_id !== userResult.user.id) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 

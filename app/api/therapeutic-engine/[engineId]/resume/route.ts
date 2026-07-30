@@ -4,31 +4,27 @@
 // ============================================================================
 
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/ssr';
+import type { NextRequest } from 'next/server';
+import { requireUser } from '@/lib/adminAuth';
 import { getEngineSessionState, resumeEngine } from '@/lib/therapeuticEngine';
 
 export async function POST(
-  request: Request,
+  request: NextRequest,
   { params }: { params: Promise<{ engineId: string }> }
 ) {
+  const userResult = await requireUser(request);
+  if (userResult instanceof NextResponse) return userResult;
+  if (!userResult) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
   try {
     const { engineId } = await params;
-    const supabase = createClient();
-
-    // Verify user is authenticated
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
 
     // Verify ownership
     const state = await getEngineSessionState(engineId);
     if (!state) {
       return NextResponse.json({ error: 'Engine not found.' }, { status: 404 });
     }
-    if (state.engine.user_id !== user.id) {
+    if (state.engine.user_id !== userResult.user.id) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
