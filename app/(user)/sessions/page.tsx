@@ -380,28 +380,28 @@ export default function Sessions() {
         <section>
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-medium text-foreground dark:text-white">
-              Therapeutic Engine Sessions
+              My Wellness Journeys
             </h2>
             {domainProtocols.length > 0 && (
               <button
                 onClick={() => setShowStartEngineModal(true)}
                 className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-dark transition-colors"
               >
-                Start New Session
+                Start a New Journey
               </button>
             )}
           </div>
 
           {engineSessions.length === 0 ? (
             <div className="rounded-xl border border-border bg-background p-8 text-center dark:bg-navy">
-              <p className="text-muted dark:text-gray-400">No therapeutic engine sessions yet.</p>
+              <p className="text-muted dark:text-gray-400">No wellness journeys yet.</p>
               {domainProtocols.length > 0 ? (
                 <p className="text-sm text-muted dark:text-gray-500 mt-1">
-                  Click &quot;Start New Session&quot; above to begin a therapeutic session.
+                  Click &quot;Start a New Journey&quot; above to begin.
                 </p>
               ) : (
                 <p className="text-sm text-muted dark:text-gray-500 mt-1">
-                  No functional domains available yet. Check back later.
+                  New journeys will be available soon.
                 </p>
               )}
             </div>
@@ -535,19 +535,18 @@ export default function Sessions() {
       <Modal
         isOpen={showStartEngineModal}
         onClose={() => !startingEngine && setShowStartEngineModal(false)}
-        title="Start Therapeutic Session"
+        title="Start Your Journey"
         size="lg"
       >
         <div className="flex flex-col gap-4">
           <p className="text-sm text-muted dark:text-gray-400">
-            Configure and start a new therapeutic engine session. Select a functional domain, an
-            emotional energetic pattern to resolve, and a personal implementation program.
+            Choose what you'd like to focus on and we'll guide you through the process.
           </p>
 
           {/* Functional Domain Selection */}
           <div className="flex flex-col gap-2">
             <label className="text-sm font-medium text-muted dark:text-gray-400">
-              Functional Domain <span className="text-red-500">*</span>
+              What would you like to focus on? <span className="text-red-500">*</span>
             </label>
             <select
               value={selectedDomainId}
@@ -557,7 +556,7 @@ export default function Sessions() {
               }}
               className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground dark:bg-navy dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50"
             >
-              <option value="">Select a functional domain...</option>
+              <option value="">Choose your focus area...</option>
               {domainProtocols.map((domain) => (
                 <option key={domain.id} value={domain.id}>
                   {domain.name}
@@ -569,14 +568,14 @@ export default function Sessions() {
           {/* AEE Selection */}
           <div className="flex flex-col gap-2">
             <label className="text-sm font-medium text-muted dark:text-gray-400">
-              Archetypal Emotional Energetic (Optional)
+              How are you feeling? (Optional)
             </label>
             <select
               value={selectedAeeId}
               onChange={(e) => setSelectedAeeId(e.target.value)}
               className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground dark:bg-navy dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50"
             >
-              <option value="">Select an emotional energetic pattern...</option>
+              <option value="">Choose what resonates...</option>
               {aeeEntries.map((aee) => (
                 <option key={aee.id} value={aee.id}>
                   {aee.name}
@@ -588,7 +587,7 @@ export default function Sessions() {
           {/* Personal Program Selection */}
           <div className="flex flex-col gap-2">
             <label className="text-sm font-medium text-muted dark:text-gray-400">
-              Personal Implementation Program (Optional)
+              Your Plan (Optional)
             </label>
             <select
               value={selectedProgramId}
@@ -596,7 +595,7 @@ export default function Sessions() {
               disabled={!selectedDomainId || filteredPrograms.length === 0}
               className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground dark:bg-navy dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50 disabled:opacity-50"
             >
-              <option value="">Select a program...</option>
+              <option value="">Choose a plan...</option>
               {filteredPrograms.map((program) => (
                 <option key={program.id} value={program.id}>
                   {program.name}
@@ -605,7 +604,7 @@ export default function Sessions() {
             </select>
             {!selectedDomainId && (
               <p className="text-xs text-muted dark:text-gray-500">
-                Select a functional domain first to see available programs.
+                Choose a focus area first to see available plans.
               </p>
             )}
           </div>
@@ -629,7 +628,7 @@ export default function Sessions() {
                   Starting...
                 </span>
               ) : (
-                'Start Session'
+                'Begin Journey'
               )}
             </button>
           </div>
@@ -640,7 +639,7 @@ export default function Sessions() {
       <Modal
         isOpen={activeEngineId !== null}
         onClose={handleCloseEngineModal}
-        title="Therapeutic Session"
+        title="Wellness Journey"
         size="xl"
       >
         {activeEngineId && (

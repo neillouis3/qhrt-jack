@@ -9,8 +9,26 @@ import type {
 } from '@/lib/types/therapeutic-engine';
 
 // ---------------------------------------------------------------------------
-// Phase status icon helper
+// Phase name translation - map technical keys to client-friendly label
 // ---------------------------------------------------------------------------
+const PHASE_DISPLAY_NAMES: Record<string, string> = {
+  conscious_regulatory_activation: 'Getting Started',
+  aee_resolution: 'Finding Balance',
+  universal_reverse_sequential: 'Clearing the Path',
+  fd_reverse_sequential: 'Focusing In',
+  current_conscious_program: 'Building New Patterns',
+  universal_activation: 'Integrating Changes',
+  fd_activation: 'Making It Real',
+  conscious_release: 'Wrapping Up',
+};
+
+function getPhaseDisplayName(phase: { phase_key?: string; name: string }) {
+  return phase.phase_key ? (PHASE_DISPLAY_NAMES[phase.phase_key] ?? phase.name) : phase.name;
+}
+
+// ---------------------------------------------------------------------------
+// Phase status icon helper
+// -----------------------------------------------------------------------------------
 function phaseStatusIcon(status: string) {
   switch (status) {
     case 'completed':
@@ -90,7 +108,7 @@ function PhaseStepper({ phases, currentOrder }: PhaseStepperProps) {
                     : 'text-muted dark:text-gray-500'
               }`}
             >
-              {phase.name}
+              {getPhaseDisplayName(phase)}
             </span>
           </div>
         );
@@ -229,7 +247,7 @@ function ObservationForm({ onSave, onCancel }: ObservationFormProps) {
           onClick={handleSave}
           className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-dark transition-colors"
         >
-          Save Observations
+          Save Reflections
         </button>
       </div>
     </div>
@@ -428,7 +446,7 @@ export default function TherapeuticSessionView({
     return (
       <div className="flex flex-col items-center justify-center py-12 gap-4">
         <div className="animate-spin h-8 w-8 border-2 border-primary border-t-transparent rounded-full" />
-        <p className="text-sm text-muted dark:text-gray-400">Loading therapeutic session...</p>
+        <p className="text-sm text-muted dark:text-gray-400">Loading your journey...</p>
       </div>
     );
   }
@@ -542,9 +560,7 @@ export default function TherapeuticSessionView({
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left: Phase Stepper */}
         <div className="lg:col-span-1">
-          <h3 className="text-sm font-medium text-muted dark:text-gray-400 mb-3">
-            Session Progress
-          </h3>
+          <h3 className="text-sm font-medium text-muted dark:text-gray-400 mb-3">Your Progress</h3>
           <PhaseStepper phases={phases} currentOrder={engine?.current_phase_order ?? 1} />
         </div>
 
@@ -555,7 +571,7 @@ export default function TherapeuticSessionView({
               {/* Client-facing prompt */}
               <div className="rounded-xl border border-border bg-background p-6 dark:bg-navy">
                 <h3 className="text-base font-medium text-foreground dark:text-white mb-3">
-                  {currentPhase.name}
+                  {getPhaseDisplayName(currentPhase)}
                 </h3>
 
                 {currentPhase.client_script ? (
@@ -571,7 +587,7 @@ export default function TherapeuticSessionView({
                   </div>
                 ) : (
                   <p className="text-sm text-muted dark:text-gray-400 italic">
-                    No client-facing content available for this phase.
+                    Take a moment to reflect on this step.
                   </p>
                 )}
               </div>
@@ -583,13 +599,13 @@ export default function TherapeuticSessionView({
                   disabled={savingObservations}
                   className="px-4 py-2 border border-border rounded-lg text-sm text-muted hover:text-foreground hover:bg-muted/5 transition-colors disabled:opacity-50 dark:border-gray-700"
                 >
-                  {savingObservations ? 'Saving...' : 'Record Observations'}
+                  {savingObservations ? 'Saving...' : 'Add Reflection'}
                 </button>
                 <button
                   onClick={handlePause}
                   className="px-4 py-2 border border-border rounded-lg text-sm text-muted hover:text-foreground hover:bg-muted/5 transition-colors dark:border-gray-700"
                 >
-                  Pause Session
+                  Take a Break
                 </button>
                 <button
                   onClick={handleCompletePhase}
@@ -602,14 +618,16 @@ export default function TherapeuticSessionView({
                       Transitioning...
                     </span>
                   ) : (
-                    'Complete & Continue'
+                    'Continue'
                   )}
                 </button>
               </div>
             </>
           ) : (
             <div className="flex items-center justify-center py-12">
-              <p className="text-sm text-muted dark:text-gray-400">No active phase.</p>
+              <p className="text-sm text-muted dark:text-gray-400">
+                Take your time with this step.
+              </p>
             </div>
           )}
         </div>
@@ -619,7 +637,7 @@ export default function TherapeuticSessionView({
       <Modal
         isOpen={showObservationForm}
         onClose={() => setShowObservationForm(false)}
-        title="Record Observations"
+        title="Your Reflections"
         size="lg"
       >
         <ObservationForm
