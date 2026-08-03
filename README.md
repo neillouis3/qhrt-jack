@@ -1,36 +1,112 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# QHRT Web App
+
+A Next.js-based web application that provides guided mental health resources and self-paced therapeutic programs. QHRT supports users through condition selection, intake assessments, and structured therapeutic sessions powered by configurable knowledge models.
+
+## Tech Stack
+
+- **Framework:** [Next.js 16](https://nextjs.org) (App Router)
+- **Language:** [TypeScript](https://www.typescriptlang.org/)
+- **UI:** [React 19](https://react.dev/) with [Tailwind CSS v4](https://tailwindcss.com/)
+- **Backend & Auth:** [Supabase](https://supabase.com) (PostgreSQL, Auth, Row-Level Security)
+
+## Prerequisites
+
+- **Node.js** 20+ and **npm** (or yarn/pnpm/bun)
+- A **Supabase** project with the database schema migrated (see `supabase/` for SQL migration files)
 
 ## Getting Started
 
-First, run the development server:
+### 1. Clone & install dependencies
+
+```bash
+npm install
+```
+
+### 2. Configure environment variables
+
+Copy `.env.example` to `.env.local` and fill in your Supabase credentials:
+
+| Variable | Description |
+|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL` | Your Supabase project URL |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Supabase anon/public JWT key |
+| `SUPABASE_SECRET_KEY` | Supabase service role key (server-side API routes) |
+
+### 3. Set up the database
+
+Run the SQL migration files in `supabase/` in order via the [Supabase SQL Editor](https://supabase.com/dashboard/project/_/sql):
+
+```
+supabase/001_condition_library_schema.sql
+supabase/002_content_layer_seed.sql
+supabase/003_conversation_framework_schema.sql
+supabase/004_sleep_knowledge_model_seed.sql
+supabase/005_therapeutic_engine_schema.sql
+supabase/006_body_composition_seed.sql
+```
+
+### 4. Run the development server
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## npm Scripts
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Script | Description |
+|---|---|
+| `npm run dev` | Start the development server |
+| `npm run build` | Build for production |
+| `npm start` | Start the production server |
+| `npm run lint` | Run ESLint |
+| `npm run lint:fix` | Auto-fix ESLint issues |
+| `npm run format` | Format code with Prettier |
+| `npm run format:check` | Check formatting without writing |
+
+## Project Structure
+
+```
+├── app/                       # Next.js App Router pages & API routes
+│   ├── (admin)/               # Admin dashboard, users, content, analytics
+│   ├── (user)/                # User-facing home, sessions, intake
+│   ├── api/                   # REST API routes (auth, admin, conversation, etc.)
+│   └── auth/                  # Login/signup pages
+├── components/                # Shared React components
+│   ├── admin/                 # Admin-specific UI components
+│   ├── conversation/          # Conversation & session UI
+│   └── therapeutic/           # Therapeutic engine UI
+├── hooks/                     # Custom React hooks (useSession, useNavigationGuard)
+├── lib/                       # Utilities & clients
+│   ├── supabaseClient.ts      # Supabase client setup
+│   ├── adminAuth.ts           # Admin authentication helpers
+│   ├── conversationEngine.ts  # Conversation logic
+│   └── therapeuticEngine.ts   # Therapeutic engine logic
+├── supabase/                  # Database migrations & seed data
+└── public/                    # Static assets
+```
+
+## Architecture Overview
+
+### User Flow
+1. **Landing** -> Unauthenticated users see a landing page; authenticated users are directed to their dashboard.
+2. **Intake & Condition Selection** -> New users select conditions and complete an intake assessment.
+3. **Sessions** -> Users engage with therapeutic sessions driven by knowledge models and the therapeutic engine.
+
+### Admin Flow
+1. **Dashboard** -> Overview stats (total users, completions, sessions).
+2. **Users** -> View and manage user accounts and roles.
+3. **Content** -> Manage conditions, categories, knowledge models, and therapeutic engines.
+4. **Analytics** -> View usage and engagement analytics.
+
+### Authentication
+- Supabase Auth handles user sign-up, login, and session management.
+- Roles (`admin`, `user`) are stored in a `user_roles` table and enforced via Row-Level Security policies.
+- Server-side API routes use the Supabase service role key for admin operations.
 
 ## Learn More
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- [Next.js Documentation](https://nextjs.org/docs)
+- [Supabase Documentation](https://supabase.com/docs)
+- [Tailwind CSS v4 Documentation](https://tailwindcss.com/docs)
