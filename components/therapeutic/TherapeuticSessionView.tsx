@@ -153,44 +153,44 @@ function ObservationForm({ onSave, onCancel }: ObservationFormProps) {
 
   return (
     <div className="flex flex-col gap-4">
-      <h3 className="text-base font-medium text-foreground dark:text-white">Phase Observations</h3>
+      <h3 className="text-base font-medium text-foreground dark:text-white">How's It Going?</h3>
 
       <div className="flex flex-col gap-2">
         <label className="text-sm font-medium text-muted dark:text-gray-400">
-          Immediate Observable Expression Change
+          What have you noticed since last time?
         </label>
         <textarea
           value={immediateExpressionChange}
           onChange={(e) => setImmediateExpressionChange(e.target.value)}
           rows={2}
           className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground dark:bg-navy dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50"
-          placeholder="Describe any observable changes..."
+          placeholder="Any changes, big or small..."
         />
       </div>
 
       <div className="flex flex-col gap-2">
         <label className="text-sm font-medium text-muted dark:text-gray-400">
-          Current Implementation Status
+          How are things going overall?
         </label>
         <textarea
           value={implementationStatus}
           onChange={(e) => setImplementationStatus(e.target.value)}
           rows={2}
           className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground dark:bg-navy dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50"
-          placeholder="Describe the current implementation status..."
+          placeholder="Share how you're feeling about your progress..."
         />
       </div>
 
       <div className="flex flex-col gap-2">
         <label className="text-sm font-medium text-muted dark:text-gray-400">
-          Remaining Organizational Uncertainty
+          Anything still feeling uncertain?
         </label>
         <textarea
           value={remainingUncertainty}
           onChange={(e) => setRemainingUncertainty(e.target.value)}
           rows={2}
           className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground dark:bg-navy dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50"
-          placeholder="Describe any remaining uncertainty..."
+          placeholder="Questions or things you'd like to explore more..."
         />
       </div>
 
@@ -206,33 +206,33 @@ function ObservationForm({ onSave, onCancel }: ObservationFormProps) {
           htmlFor="anotherCycleRequired"
           className="text-sm font-medium text-muted dark:text-gray-400"
         >
-          Another cycle required
+          I'd like to go through this again
         </label>
       </div>
 
       <div className="flex flex-col gap-2">
         <label className="text-sm font-medium text-muted dark:text-gray-400">
-          Domain-Specific Observations
+          Anything specific about your focus area?
         </label>
         <textarea
           value={domainSpecificObservations}
           onChange={(e) => setDomainSpecificObservations(e.target.value)}
           rows={2}
           className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground dark:bg-navy dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50"
-          placeholder="Domain-specific observations..."
+          placeholder="Thoughts about what you're working on..."
         />
       </div>
 
       <div className="flex flex-col gap-2">
         <label className="text-sm font-medium text-muted dark:text-gray-400">
-          Client Reflection
+          How are you feeling?
         </label>
         <textarea
           value={clientReflection}
           onChange={(e) => setClientReflection(e.target.value)}
           rows={2}
           className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground dark:bg-navy dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50"
-          placeholder="Client reflection..."
+          placeholder="Share whatever is on your mind..."
         />
       </div>
 
@@ -413,6 +413,8 @@ export default function TherapeuticSessionView({
     setError(null);
 
     try {
+      const currentOrder = currentPhase?.phase_order ?? engine?.current_phase_order;
+
       // Save observations if any were entered
       const res = await fetch(`/api/therapeutic-engine/${engineId}/complete-phase`, {
         method: 'POST',
@@ -425,15 +427,27 @@ export default function TherapeuticSessionView({
         throw new Error(err.error ?? 'Failed to complete phase');
       }
 
-      // Then transition to next phase
-      await handleTransition();
+      // Refresh state after completing the phase
+      await fetchState();
+
+      // Only transition if this wasn't the last phase
+      // (Phase 8 completion marks the engine as 'completed', so no transition needed)
+      if (currentOrder !== 8) {
+        await handleTransition();
+      }
     } catch (err) {
       console.error('[TherapeuticSessionView] Failed to complete phase:', err);
       setError(err instanceof Error ? err.message : 'Unknown error');
     } finally {
       setTransitioning(false);
     }
-  }, [engineId, handleTransition]);
+  }, [
+    engineId,
+    handleTransition,
+    fetchState,
+    currentPhase?.phase_order,
+    engine?.current_phase_order,
+  ]);
 
   // Check if engine is completed (all phases done)
   const isEngineCompleted = engine?.status === 'completed';
@@ -475,17 +489,16 @@ export default function TherapeuticSessionView({
     return (
       <div className="flex flex-col items-center justify-center py-12 gap-4">
         <div className="text-4xl mb-2">⏸</div>
-        <h3 className="text-lg font-medium text-foreground dark:text-white">Session Paused</h3>
+        <h3 className="text-lg font-medium text-foreground dark:text-white">On a Break</h3>
         <p className="text-sm text-muted dark:text-gray-400 text-center max-w-md">
-          Your therapeutic session is paused. You can resume at any time to continue from where you
-          left off.
+          Your journey is paused. You can pick up right where you left off whenever you're ready.
         </p>
         <div className="flex gap-3 mt-4">
           <button
             onClick={handleResume}
             className="px-6 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-dark transition-colors"
           >
-            Resume Session
+            Continue Your Journey
           </button>
           <button
             onClick={onClose}
@@ -505,15 +518,15 @@ export default function TherapeuticSessionView({
     return (
       <div className="flex flex-col items-center justify-center py-12 gap-4">
         <div className="text-4xl mb-2">✓</div>
-        <h3 className="text-lg font-medium text-foreground dark:text-white">Session Complete</h3>
+        <h3 className="text-lg font-medium text-foreground dark:text-white">Journey Complete</h3>
         <p className="text-sm text-muted dark:text-gray-400 text-center max-w-md">
-          You have completed all phases of this therapeutic session. Your progress has been saved.
+          You've completed all steps of this journey. Your progress has been saved.
         </p>
         <button
           onClick={onClose}
           className="px-6 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-dark transition-colors mt-4"
         >
-          Close Session
+          Close
         </button>
       </div>
     );
@@ -534,12 +547,10 @@ export default function TherapeuticSessionView({
       {/* Session header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-semibold text-foreground dark:text-white">
-            Therapeutic Session
-          </h2>
+          <h2 className="text-lg font-semibold text-foreground dark:text-white">Your Journey</h2>
           {currentPhase && (
             <p className="text-sm text-muted dark:text-gray-400">
-              Phase {currentPhase.phase_order}: {currentPhase.name}
+              Step {currentPhase.phase_order}: {getPhaseDisplayName(currentPhase)}
             </p>
           )}
         </div>
