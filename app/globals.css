@@ -33,6 +33,21 @@
   --font-mono: var(--font-geist-mono);
 }
 
+@layer utilities {
+  .max-w-sm {
+    max-width: 24rem;
+  }
+  .max-w-md {
+    max-width: 36rem;
+  }
+  .max-w-lg {
+    max-width: 54rem;
+  }
+  .max-w-xl {
+    max-width: 72rem;
+  }
+}
+
 @media (prefers-color-scheme: dark) {
   :root {
     --background: #0f172a;
