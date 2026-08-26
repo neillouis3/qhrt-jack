@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import Modal from './Modal';
 
 export interface SettingsModalProps {
@@ -8,6 +9,8 @@ export interface SettingsModalProps {
 }
 
 export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
+  const [darkMode, setDarkMode] = useState(false);
+
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Settings">
       <div className="space-y-6">
@@ -45,11 +48,19 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
               <span className="text-sm text-foreground dark:text-muted">Dark Mode</span>
               <button
                 type="button"
-                className="relative w-11 h-6 rounded-full bg-border dark:bg-primary transition-colors"
+                onClick={() => setDarkMode((v) => !v)}
+                className={`relative w-11 h-6 rounded-full transition-colors ${
+                  darkMode ? 'bg-primary' : 'bg-border'
+                }`}
                 role="switch"
-                aria-checked="false"
+                aria-checked={darkMode}
+                aria-label="Dark mode"
               >
-                <span className="absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform dark:translate-x-5" />
+                <span
+                  className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${
+                    darkMode ? 'translate-x-5' : ''
+                  }`}
+                />
               </button>
             </div>
           </div>

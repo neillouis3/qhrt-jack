@@ -154,18 +154,21 @@ export default function ConditionSelection({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch categories on mount
+  // Fetch categories on mount (with abort on unmount)
   useEffect(() => {
-    fetch('/api/conditions/categories')
+    const controller = new AbortController();
+    fetch('/api/conditions/categories', { signal: controller.signal })
       .then((res) => res.json())
       .then((data) => {
         setCategories(data.categories ?? []);
         setLoading(false);
       })
-      .catch(() => {
+      .catch((err) => {
+        if (err.name === 'AbortError') return;
         setError('Failed to load condition library. Please try again.');
         setLoading(false);
       });
+    return () => controller.abort();
   }, []);
 
   const handleCategoryClick = useCallback((cat: CategoryWithConditions) => {
@@ -208,8 +211,8 @@ export default function ConditionSelection({
       }
 
       onComplete();
-    } catch (err: any) {
-      setError(err.message ?? 'Something went wrong');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Something went wrong');
     } finally {
       setSaving(false);
     }

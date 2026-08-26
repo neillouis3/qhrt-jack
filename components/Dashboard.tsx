@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import Modal from '@/components/Modal';
 import AssessmentRenderer from '@/components/AssessmentRenderer';
 
@@ -85,11 +85,7 @@ export default function Dashboard({
   const [activeConditionId, setActiveConditionId] = useState<string | null>(null);
   const [activeConditionName, setActiveConditionName] = useState<string>('');
 
-  useEffect(() => {
-    if (userId) fetchAllData();
-  }, [userId]);
-
-  const fetchAllData = async () => {
+  const fetchAllData = useCallback(async () => {
     try {
       const res = await fetch('/api/user/dashboard');
       if (!res.ok) return;
@@ -107,7 +103,11 @@ export default function Dashboard({
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    if (userId) fetchAllData();
+  }, [userId, fetchAllData]);
 
   const displayName = userName ? userName.split('@')[0] : (userEmail?.split('@')[0] ?? 'there');
 
@@ -139,6 +139,22 @@ export default function Dashboard({
     const dates = new Set(results.map((r) => r.answered_at.split('T')[0]));
     return dates.size;
   };
+
+  // Memoize per-condition score and count computations (used in the render loop)
+  const conditionStats = useMemo(
+    () =>
+      new Map(
+        Object.entries(assessmentResults).map(([conditionId]) => [
+          conditionId,
+          {
+            latestScore: getLatestAverageScore(conditionId),
+            assessmentCount: getAssessmentCount(conditionId),
+          },
+        ])
+      ),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [assessmentResults]
+  );
 
   return (
     <div className="flex flex-col flex-1 w-full max-w-4xl mx-auto px-6 py-12">
@@ -188,8 +204,9 @@ export default function Dashboard({
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {selectedConditions.map((cond) => {
-                  const latestScore = getLatestAverageScore(cond.condition_id);
-                  const assessmentCount = getAssessmentCount(cond.condition_id);
+                  const stats = conditionStats.get(cond.condition_id);
+                  const latestScore = stats?.latestScore ?? null;
+                  const assessmentCount = stats?.assessmentCount ?? 0;
 
                   return (
                     <div

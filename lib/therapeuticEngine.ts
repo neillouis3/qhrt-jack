@@ -6,6 +6,10 @@
 // ============================================================================
 
 import { supabaseServer } from '@/lib/supabaseClient';
+import type { SupabaseClient } from '@supabase/supabase-js';
+
+/** Maximum phase order in the Universal Therapeutic Engine (8-phase lifecycle). */
+const MAX_PHASE_ORDER = 8;
 import type {
   TherapeuticEngine,
   TherapeuticPhase,
@@ -16,6 +20,7 @@ import type {
   PhaseObservation,
   EngineSessionState,
   PhaseStatus,
+  PhaseDeliveryContent,
   CreateEngineRequest,
   CompletePhaseRequest,
   SaveObservationRequest,
@@ -30,7 +35,6 @@ function canTransitionTo(
   phases: TherapeuticPhase[],
   engine: TherapeuticEngine
 ): boolean {
-  const phaseByKey = (key: string) => phases.find((p) => p.phase_order === key);
   // Helper: get status by order
   const getStatus = (order: number): PhaseStatus | undefined =>
     phases.find((p) => p.phase_order === order)?.status;
@@ -86,11 +90,13 @@ function canTransitionTo(
 // ----------------------------------------------------------------------------
 export async function initializeEngine(
   userId: string,
-  request: CreateEngineRequest
+  request: CreateEngineRequest,
+  client?: SupabaseClient
 ): Promise<TherapeuticEngine | null> {
+  const db = client ?? supabaseServer;
   try {
     // 1. Fetch active phase templates (ordered)
-    const { data: templates, error: tmplError } = await supabaseServer
+    const { data: templates, error: tmplError } = await db
       .from('phase_templates')
       .select('*')
       .eq('is_active', true)
@@ -102,7 +108,7 @@ export async function initializeEngine(
     }
 
     // 2. Create the engine record
-    const { data: engine, error: engineError } = await supabaseServer
+    const { data: engine, error: engineError } = await db
       .from('therapeutic_engines')
       .insert({
         user_id: userId,
@@ -121,9 +127,9 @@ export async function initializeEngine(
     }
 
     // 3. Create phase rows from templates, merging with domain/AEE/program delivery content
-    const phasesToInsert = await buildPhaseRows(engine.id, templates, request);
+    const phasesToInsert = await buildPhaseRows(engine.id, templates, request, db);
 
-    const { error: phasesError } = await supabaseServer
+    const { error: phasesError } = await db
       .from('therapeutic_phases')
       .insert(phasesToInsert);
 
@@ -133,14 +139,14 @@ export async function initializeEngine(
     }
 
     // 4. Set Phase 1 as active
-    await supabaseServer
+    await db
       .from('therapeutic_phases')
       .update({ status: 'active', started_at: new Date().toISOString() })
       .eq('engine_id', engine.id)
       .eq('phase_order', 1);
 
     // Return the created engine with refreshed data
-    return getEngineById(engine.id);
+    return getEngineById(engine.id, db);
   } catch (err) {
     console.error('[therapeuticEngine] initializeEngine error:', err);
     return null;
@@ -153,26 +159,28 @@ export async function initializeEngine(
 async function buildPhaseRows(
   engineId: string,
   templates: PhaseTemplate[],
-  request: CreateEngineRequest
+  request: CreateEngineRequest,
+  client?: SupabaseClient
 ): Promise<Partial<TherapeuticPhase>[]> {
+  const db = client ?? supabaseServer;
   // Fetch modular content in parallel
   const [domainRes, aeeRes, programRes] = await Promise.all([
     request.functional_domain_protocol_id
-      ? supabaseServer
+      ? db
           .from('functional_domain_protocols')
           .select('*')
           .eq('id', request.functional_domain_protocol_id)
           .single()
       : Promise.resolve({ data: null }),
     request.aee_id
-      ? supabaseServer
+      ? db
           .from('archetypal_emotional_energetics')
           .select('*')
           .eq('id', request.aee_id)
           .single()
       : Promise.resolve({ data: null }),
     request.personal_program_id
-      ? supabaseServer
+      ? db
           .from('personal_implementation_programs')
           .select('*')
           .eq('id', request.personal_program_id)
@@ -190,7 +198,7 @@ async function buildPhaseRows(
 
     // Enrich with domain-specific delivery content if available
     if (domain?.delivery_content && typeof domain.delivery_content === 'object') {
-      const phaseContent = (domain.delivery_content as any)[tmpl.phase_key];
+      const phaseContent = (domain.delivery_content as PhaseDeliveryContent)[tmpl.phase_key];
       if (phaseContent?.client_script) {
         clientScript = mergeScripts(clientScript, phaseContent.client_script);
       }
@@ -198,7 +206,7 @@ async function buildPhaseRows(
 
     // Enrich with personal program delivery content
     if (program?.delivery_content && typeof program.delivery_content === 'object') {
-      const phaseContent = (program.delivery_content as any)[tmpl.phase_key];
+      const phaseContent = (program.delivery_content as PhaseDeliveryContent)[tmpl.phase_key];
       if (phaseContent?.client_script) {
         clientScript = mergeScripts(clientScript, phaseContent.client_script);
       }
@@ -236,8 +244,9 @@ function mergeScripts(base: string | null, addition: string | null): string | nu
 // ----------------------------------------------------------------------------
 // Get Engine by ID
 // ----------------------------------------------------------------------------
-export async function getEngineById(engineId: string): Promise<TherapeuticEngine | null> {
-  const { data, error } = await supabaseServer
+export async function getEngineById(engineId: string, client?: SupabaseClient): Promise<TherapeuticEngine | null> {
+  const db = client ?? supabaseServer;
+  const { data, error } = await db
     .from('therapeutic_engines')
     .select('*')
     .eq('id', engineId)
@@ -250,41 +259,42 @@ export async function getEngineById(engineId: string): Promise<TherapeuticEngine
 // ----------------------------------------------------------------------------
 // Get Full Engine Session State (composed view)
 // ----------------------------------------------------------------------------
-export async function getEngineSessionState(engineId: string): Promise<EngineSessionState | null> {
+export async function getEngineSessionState(engineId: string, client?: SupabaseClient): Promise<EngineSessionState | null> {
+  const db = client ?? supabaseServer;
   try {
     // Fetch engine
-    const engine = await getEngineById(engineId);
+    const engine = await getEngineById(engineId, db);
     if (!engine) return null;
 
     // Fetch phases, domain, AEE, program, observations in parallel
     const [phasesRes, domainRes, aeeRes, programRes, obsRes] = await Promise.all([
-      supabaseServer
+      db
         .from('therapeutic_phases')
         .select('*')
         .eq('engine_id', engineId)
         .order('phase_order', { ascending: true }),
       engine.functional_domain_protocol_id
-        ? supabaseServer
+        ? db
             .from('functional_domain_protocols')
             .select('*')
             .eq('id', engine.functional_domain_protocol_id)
             .single()
         : Promise.resolve({ data: null }),
       engine.aee_id
-        ? supabaseServer
+        ? db
             .from('archetypal_emotional_energetics')
             .select('*')
             .eq('id', engine.aee_id)
             .single()
         : Promise.resolve({ data: null }),
       engine.personal_program_id
-        ? supabaseServer
+        ? db
             .from('personal_implementation_programs')
             .select('*')
             .eq('id', engine.personal_program_id)
             .single()
         : Promise.resolve({ data: null }),
-      supabaseServer.from('phase_observations').select('*').eq('therapeutic_engine_id', engineId),
+      db.from('phase_observations').select('*').eq('therapeutic_engine_id', engineId),
     ]);
 
     const phases = (phasesRes.data || []) as TherapeuticPhase[];
@@ -293,7 +303,8 @@ export async function getEngineSessionState(engineId: string): Promise<EngineSes
 
     // Check if transition to next phase is allowed
     const nextOrder = engine.current_phase_order + 1;
-    const canTransition = nextOrder <= 8 ? canTransitionTo(nextOrder, phases, engine) : false;
+    const canTransition =
+      nextOrder <= MAX_PHASE_ORDER ? canTransitionTo(nextOrder, phases, engine) : false;
 
     return {
       engine,
@@ -316,10 +327,12 @@ export async function getEngineSessionState(engineId: string): Promise<EngineSes
 // Marks current phase completed, activates next phase if rules allow.
 // ----------------------------------------------------------------------------
 export async function transitionToNextPhase(
-  engineId: string
+  engineId: string,
+  client?: SupabaseClient
 ): Promise<{ success: boolean; message: string; newState?: EngineSessionState }> {
+  const db = client ?? supabaseServer;
   try {
-    const state = await getEngineSessionState(engineId);
+    const state = await getEngineSessionState(engineId, db);
     if (!state) return { success: false, message: 'Engine not found.' };
 
     const currentOrder = state.engine.current_phase_order;
@@ -338,33 +351,60 @@ export async function transitionToNextPhase(
       };
     }
 
-    // Mark current phase as completed
-    await supabaseServer
+    // Step 1: Mark current phase as completed
+    const { error: step1Error } = await db
       .from('therapeutic_phases')
       .update({ status: 'completed', completed_at: new Date().toISOString() })
       .eq('engine_id', engineId)
       .eq('phase_order', currentOrder);
 
-    // Activate next phase
-    await supabaseServer
+    if (step1Error) {
+      console.error('[therapeuticEngine] transition step 1 failed:', step1Error);
+      return { success: false, message: 'Failed to mark current phase as completed.' };
+    }
+
+    // Step 2: Activate next phase
+    const { error: step2Error } = await db
       .from('therapeutic_phases')
       .update({ status: 'active', started_at: new Date().toISOString() })
       .eq('engine_id', engineId)
       .eq('phase_order', nextOrder);
 
-    // Update engine current_phase_order
-    await supabaseServer
+    if (step2Error) {
+      // Compensate: revert step 1
+      await db
+        .from('therapeutic_phases')
+        .update({ status: 'active', completed_at: null })
+        .eq('engine_id', engineId)
+        .eq('phase_order', currentOrder);
+      console.error('[therapeuticEngine] transition step 2 failed (rolled back step 1):', step2Error);
+      return { success: false, message: 'Failed to activate next phase. State has been rolled back.' };
+    }
+
+    // Step 3: Update engine current_phase_order
+    const { error: step3Error } = await db
       .from('therapeutic_engines')
       .update({ current_phase_order: nextOrder, status: 'running' })
       .eq('id', engineId);
 
-    // If this was the last phase (8), mark engine completed
-    if (nextOrder === 8) {
-      // Engine stays running until Phase 8 is also completed
+    if (step3Error) {
+      // Compensate: revert steps 1 & 2
+      await db
+        .from('therapeutic_phases')
+        .update({ status: 'active', completed_at: null })
+        .eq('engine_id', engineId)
+        .eq('phase_order', currentOrder);
+      await db
+        .from('therapeutic_phases')
+        .update({ status: 'not_started', started_at: null })
+        .eq('engine_id', engineId)
+        .eq('phase_order', nextOrder);
+      console.error('[therapeuticEngine] transition step 3 failed (rolled back steps 1-2):', step3Error);
+      return { success: false, message: 'Failed to update engine state. State has been rolled back.' };
     }
 
-    const newState = await getEngineSessionState(engineId);
-    return { success: true, message: `Transitioned to Phase ${nextOrder}.`, newState };
+    const newState = await getEngineSessionState(engineId, db);
+    return { success: true, message: `Transitioned to Phase ${nextOrder}.`, newState: newState ?? undefined };
   } catch (err) {
     console.error('[therapeuticEngine] transitionToNextPhase error:', err);
     return { success: false, message: 'An error occurred during phase transition.' };
@@ -376,16 +416,18 @@ export async function transitionToNextPhase(
 // ----------------------------------------------------------------------------
 export async function completeCurrentPhase(
   engineId: string,
-  request: CompletePhaseRequest
+  request: CompletePhaseRequest,
+  client?: SupabaseClient
 ): Promise<{ success: boolean; message: string }> {
+  const db = client ?? supabaseServer;
   try {
-    const state = await getEngineSessionState(engineId);
+    const state = await getEngineSessionState(engineId, db);
     if (!state) return { success: false, message: 'Engine not found.' };
 
     const phaseOrder = request.phase_order || state.engine.current_phase_order;
 
     // Mark phase completed
-    await supabaseServer
+    await db
       .from('therapeutic_phases')
       .update({ status: 'completed', completed_at: new Date().toISOString() })
       .eq('engine_id', engineId)
@@ -396,12 +438,12 @@ export async function completeCurrentPhase(
       await saveObservation(engineId, {
         phase_order: phaseOrder,
         ...request.observations,
-      });
+      }, db);
     }
 
     // If this was Phase 8, mark engine as completed
     if (phaseOrder === 8) {
-      await supabaseServer
+      await db
         .from('therapeutic_engines')
         .update({ status: 'completed' })
         .eq('id', engineId);
@@ -419,11 +461,13 @@ export async function completeCurrentPhase(
 // ----------------------------------------------------------------------------
 export async function saveObservation(
   engineId: string,
-  request: SaveObservationRequest
+  request: SaveObservationRequest,
+  client?: SupabaseClient
 ): Promise<{ success: boolean; message: string }> {
+  const db = client ?? supabaseServer;
   try {
     // Upsert observation (insert or update)
-    const { error } = await supabaseServer.from('phase_observations').upsert(
+    const { error } = await db.from('phase_observations').upsert(
       {
         therapeutic_engine_id: engineId,
         phase_order: request.phase_order,
@@ -453,10 +497,12 @@ export async function saveObservation(
 // Pause Engine
 // ----------------------------------------------------------------------------
 export async function pauseEngine(
-  engineId: string
+  engineId: string,
+  client?: SupabaseClient
 ): Promise<{ success: boolean; message: string }> {
+  const db = client ?? supabaseServer;
   try {
-    const { error } = await supabaseServer
+    const { error } = await db
       .from('therapeutic_engines')
       .update({ status: 'paused' })
       .eq('id', engineId);
@@ -475,10 +521,12 @@ export async function pauseEngine(
 // Resume Engine
 // ----------------------------------------------------------------------------
 export async function resumeEngine(
-  engineId: string
+  engineId: string,
+  client?: SupabaseClient
 ): Promise<{ success: boolean; message: string }> {
+  const db = client ?? supabaseServer;
   try {
-    const { error } = await supabaseServer
+    const { error } = await db
       .from('therapeutic_engines')
       .update({ status: 'running' })
       .eq('id', engineId);
@@ -499,9 +547,11 @@ export async function resumeEngine(
 // ----------------------------------------------------------------------------
 export async function getClientDeliveryContent(
   engineId: string,
-  phaseOrder: number
-): Promise<{ clientScript: string | null; prompts?: any[] } | null> {
-  const { data, error } = await supabaseServer
+  phaseOrder: number,
+  client?: SupabaseClient
+): Promise<{ clientScript: string | null; prompts?: PhaseDeliveryContent[string]['prompts'] } | null> {
+  const db = client ?? supabaseServer;
+  const { data, error } = await db
     .from('therapeutic_phases')
     .select('client_script')
     .eq('engine_id', engineId)
@@ -515,8 +565,9 @@ export async function getClientDeliveryContent(
 // ----------------------------------------------------------------------------
 // Get All Engines for a User
 // ----------------------------------------------------------------------------
-export async function getEnginesByUserId(userId: string): Promise<TherapeuticEngine[]> {
-  const { data, error } = await supabaseServer
+export async function getEnginesByUserId(userId: string, client?: SupabaseClient): Promise<TherapeuticEngine[]> {
+  const db = client ?? supabaseServer;
+  const { data, error } = await db
     .from('therapeutic_engines')
     .select('*')
     .eq('user_id', userId)
@@ -529,8 +580,9 @@ export async function getEnginesByUserId(userId: string): Promise<TherapeuticEng
 // ----------------------------------------------------------------------------
 // Get All Engines (Admin)
 // ----------------------------------------------------------------------------
-export async function getAllEngines(): Promise<TherapeuticEngine[]> {
-  const { data, error } = await supabaseServer
+export async function getAllEngines(client?: SupabaseClient): Promise<TherapeuticEngine[]> {
+  const db = client ?? supabaseServer;
+  const { data, error } = await db
     .from('therapeutic_engines')
     .select('*')
     .order('created_at', { ascending: false });
