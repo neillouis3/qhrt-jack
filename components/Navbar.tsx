@@ -4,11 +4,9 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import useNavigationGuard from '@/hooks/useNavigationGuard';
+import type { NavItem } from '@/components/NavbarContext';
 
-export interface NavItem {
-  name: string;
-  path: string;
-}
+export type { NavItem };
 
 export interface NavbarProps {
   logo?: string;
@@ -74,6 +72,8 @@ export default function Navbar({
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             className="p-2 rounded-md text-muted hover:text-foreground hover:bg-muted/5 transition-colors"
             aria-label="Toggle menu"
+            aria-haspopup="menu"
+            aria-expanded={mobileMenuOpen}
           >
             {mobileMenuOpen ? (
               <svg
@@ -98,13 +98,18 @@ export default function Navbar({
             )}
           </button>
           {mobileMenuOpen && (
-            <div className="absolute right-6 left-auto mt-2 w-48 rounded-lg border border-border bg-background shadow-lg py-1 z-50">
+            <div
+              role="menu"
+              aria-label="Navigation"
+              className="absolute right-6 left-auto mt-2 w-48 rounded-lg border border-border bg-background shadow-lg py-1 z-50"
+            >
               {links.map((link) => {
                 const isActive = pathname === link.path;
                 return (
                   <Link
                     key={link.path}
                     href={link.path}
+                    role="menuitem"
                     onClick={(e) => {
                       if (!navigate(link.path)) e.preventDefault();
                       setMobileMenuOpen(false);
