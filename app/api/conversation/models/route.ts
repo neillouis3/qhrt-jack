@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { supabaseServer } from '@/lib/supabaseClient';
+import { createUserClient } from '@/lib/supabaseClient';
 import { requireUser } from '@/lib/adminAuth';
+import { apiError } from '@/lib/apiError';
 
 /**
  * GET — List available Knowledge Models
@@ -12,15 +13,14 @@ export async function GET(request: NextRequest) {
   if (!userResult) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   try {
-    const { data, error } = await supabaseServer
+    const { data, error } = await createUserClient(request)
       .from('knowledge_models')
       .select('*')
       .eq('is_active', true)
       .order('name', { ascending: true });
 
     if (error) {
-      console.error('[api/conversation/models] GET error:', error);
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return apiError(error, '[api/conversation/models] GET');
     }
 
     return NextResponse.json({ knowledge_models: data ?? [] });

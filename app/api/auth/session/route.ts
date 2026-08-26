@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
-import { supabaseServer } from '@/lib/supabaseClient';
+import { createUserClient } from '@/lib/supabaseClient';
 
 export async function GET(request: NextRequest) {
   try {
@@ -30,14 +30,11 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid session' }, { status: 401 });
     }
 
-    // Fetch role and intake status in parallel (bypass RLS with server client)
+    // Fetch role and intake status in parallel (RLS-enforced to this user's rows)
+    const db = createUserClient(request);
     const [roleResult, progressResult] = await Promise.all([
-      supabaseServer.from('user_roles').select('role').eq('user_id', user.id).single(),
-      supabaseServer
-        .from('user_progress')
-        .select('intake_completed')
-        .eq('user_id', user.id)
-        .maybeSingle(),
+      db.from('user_roles').select('role').eq('user_id', user.id).single(),
+      db.from('user_progress').select('intake_completed').eq('user_id', user.id).maybeSingle(),
     ]);
 
     let role = 'user';
@@ -60,7 +57,7 @@ export async function GET(request: NextRequest) {
         },
       }
     );
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

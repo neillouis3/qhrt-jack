@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { supabaseServer } from '@/lib/supabaseClient';
+import { apiError } from '@/lib/apiError';
 
 /**
  * Public endpoint — returns active categories with condition counts.
@@ -16,7 +17,7 @@ export async function GET(request: NextRequest) {
       .order('display_order', { ascending: true });
 
     if (catError) {
-      return NextResponse.json({ error: catError.message }, { status: 500 });
+      return apiError(catError, '[api/conditions/categories] categories');
     }
 
     // Fetch active conditions to count per category
@@ -27,7 +28,7 @@ export async function GET(request: NextRequest) {
       .order('display_order', { ascending: true });
 
     if (condError) {
-      return NextResponse.json({ error: condError.message }, { status: 500 });
+      return apiError(condError, '[api/conditions/categories] conditions');
     }
 
     // Build category map with conditions attached

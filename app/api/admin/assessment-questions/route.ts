@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { supabaseServer } from '@/lib/supabaseClient';
 import { requireAdmin } from '@/lib/adminAuth';
+import { apiError } from '@/lib/apiError';
 
 // ---------------------------------------------------------------------------
 // GET — list assessment questions (optionally filtered by condition_id)
@@ -14,6 +15,7 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const conditionId = searchParams.get('conditionId');
+    const search = searchParams.get('search')?.trim() ?? '';
 
     let query = supabaseServer.from('assessment_questions').select(`
         *,
@@ -23,13 +25,16 @@ export async function GET(request: NextRequest) {
     if (conditionId) {
       query = query.eq('condition_id', conditionId);
     }
+    if (search) {
+      query = query.ilike('question_text', `%${search}%`);
+    }
 
     query = query.order('display_order', { ascending: true });
 
     const { data, error } = await query;
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return apiError(error, '[api/admin/assessment-questions] GET');
     }
 
     return NextResponse.json({ questions: data ?? [] }, { status: 200 });
@@ -80,7 +85,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return apiError(error, '[api/admin/assessment-questions] POST');
     }
 
     return NextResponse.json({ success: true, question: data }, { status: 201 });
@@ -123,7 +128,7 @@ export async function PATCH(request: NextRequest) {
       .single();
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return apiError(error, '[api/admin/assessment-questions] PATCH');
     }
 
     return NextResponse.json({ success: true, question: data }, { status: 200 });
@@ -152,7 +157,7 @@ export async function DELETE(request: NextRequest) {
     const { error } = await supabaseServer.from('assessment_questions').delete().eq('id', id);
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return apiError(error, '[api/admin/assessment-questions] DELETE');
     }
 
     return NextResponse.json(

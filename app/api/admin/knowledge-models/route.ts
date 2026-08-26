@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { supabaseServer } from '@/lib/supabaseClient';
 import { requireAdmin } from '@/lib/adminAuth';
+import { apiError } from '@/lib/apiError';
 
 // ---------------------------------------------------------------------------
 // GET — list knowledge models
@@ -14,11 +15,15 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const activeOnly = searchParams.get('activeOnly') === 'true';
+    const search = searchParams.get('search')?.trim() ?? '';
 
     let query = supabaseServer.from('knowledge_models').select('*');
 
     if (activeOnly) {
       query = query.eq('is_active', true);
+    }
+    if (search) {
+      query = query.ilike('name', `%${search}%`);
     }
 
     query = query.order('name', { ascending: true });
@@ -26,7 +31,7 @@ export async function GET(request: NextRequest) {
     const { data, error } = await query;
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return apiError(error, '[api/admin/knowledge-models] GET');
     }
 
     return NextResponse.json({ knowledge_models: data ?? [] }, { status: 200 });
@@ -67,7 +72,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return apiError(error, '[api/admin/knowledge-models] POST');
     }
 
     return NextResponse.json({ success: true, knowledge_model: data }, { status: 201 });

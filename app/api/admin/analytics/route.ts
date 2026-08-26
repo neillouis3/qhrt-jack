@@ -5,50 +5,8 @@
 
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { createServerClient } from '@supabase/ssr';
 import { supabaseServer } from '@/lib/supabaseClient';
-
-// ---------------------------------------------------------------------------
-// Admin auth guard (shared pattern with /api/admin/stats)
-// ---------------------------------------------------------------------------
-
-async function requireAdmin(request: NextRequest): Promise<any | NextResponse> {
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll();
-        },
-        setAll() {
-          // No-op — read only.
-        },
-      },
-    }
-  );
-
-  const {
-    data: { user },
-    error,
-  } = await supabase.auth.getUser();
-
-  if (error || !user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
-  const { data: roleData, error: roleError } = await supabaseServer
-    .from('user_roles')
-    .select('role')
-    .eq('user_id', user.id)
-    .maybeSingle();
-
-  if (roleError || !roleData?.role || roleData.role !== 'admin') {
-    return NextResponse.json({ error: 'Forbidden — admin access required' }, { status: 403 });
-  }
-
-  return user;
-}
+import { requireAdmin } from '@/lib/adminAuth';
 
 // ---------------------------------------------------------------------------
 // Helper: build a date range array (ISO date strings)
@@ -69,8 +27,8 @@ function getDateRange(days: number): string[] {
 // ---------------------------------------------------------------------------
 
 export async function GET(request: NextRequest) {
-  const authResult = await requireAdmin(request);
-  if (authResult instanceof NextResponse) return authResult;
+  const authCheck = await requireAdmin(request);
+  if (authCheck) return authCheck;
 
   try {
     const thirtyDaysAgo = new Date();
@@ -106,7 +64,9 @@ export async function GET(request: NextRequest) {
     }
 
     // Filter auth users: exclude admins
-    const nonAdminAuthUsers = allAuthUsers.filter((u: any) => roleMap[u.id] !== 'admin');
+    const nonAdminAuthUsers = allAuthUsers.filter(
+      (u: { id: string; created_at?: string }) => roleMap[u.id] !== 'admin'
+    );
 
     const [
       sessions30d,
@@ -235,7 +195,8 @@ export async function GET(request: NextRequest) {
     // ---- Process signups per day (from auth.users.created_at) ---------------
     const signupDates = getDateRange(30);
     const signupsByDay = signupDates.map((date) => {
-      const count = nonAdminAuthUsers.filter((u: any) => {
+      const count = nonAdminAuthUsers.filter((u: { id: string; created_at?: string }) => {
+        if (!u.created_at) return false;
         const userDate = new Date(u.created_at).toISOString().slice(0, 10);
         return userDate === date;
       }).length;
@@ -279,7 +240,7 @@ export async function GET(request: NextRequest) {
       for (const row of typedRatings) {
         const r = Math.round(row.rating);
         if (r >= 1 && r <= 5) {
-          dist[r]++;
+          dist[r] = (dist[r] ?? 0) + 1;
           total++;
         }
       }

@@ -6,6 +6,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { requireUser } from '@/lib/adminAuth';
+import { createUserClient } from '@/lib/supabaseClient';
 import { getEngineSessionState } from '@/lib/therapeuticEngine';
 
 export async function GET(
@@ -18,9 +19,10 @@ export async function GET(
 
   try {
     const { engineId } = await params;
+    const db = createUserClient(request);
 
-    // Get engine state
-    const state = await getEngineSessionState(engineId);
+    // Get engine state (RLS scopes to caller's own engines)
+    const state = await getEngineSessionState(engineId, db);
     if (!state) {
       return NextResponse.json({ error: 'Engine not found.' }, { status: 404 });
     }

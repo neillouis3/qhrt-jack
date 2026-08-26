@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { supabaseServer } from '@/lib/supabaseClient';
 import { requireAdmin } from '@/lib/adminAuth';
+import { apiError } from '@/lib/apiError';
 
 // ---------------------------------------------------------------------------
 // GET — list conditions with optional filtering
@@ -16,7 +17,7 @@ export async function GET(request: NextRequest) {
     const categoryId = searchParams.get('categoryId');
     const activeOnly = searchParams.get('activeOnly') === 'true';
     const featuredOnly = searchParams.get('featuredOnly') === 'true';
-    const search = searchParams.get('search') ?? '';
+    const search = searchParams.get('search')?.trim() ?? '';
 
     let query = supabaseServer.from('conditions').select(`
         *,
@@ -32,27 +33,19 @@ export async function GET(request: NextRequest) {
     if (featuredOnly) {
       query = query.eq('is_featured', true);
     }
+    if (search) {
+      query = query.or(`name.ilike.%${search}%,short_description.ilike.%${search}%`);
+    }
 
     query = query.order('display_order', { ascending: true });
 
     const { data, error } = await query;
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return apiError(error, '[api/admin/conditions] GET');
     }
 
-    // Client-side search filter (since Supabase doesn't support text search easily)
-    let results = data ?? [];
-    if (search.trim()) {
-      const term = search.trim().toLowerCase();
-      results = results.filter(
-        (c: any) =>
-          c.name.toLowerCase().includes(term) ||
-          (c.short_description && c.short_description.toLowerCase().includes(term))
-      );
-    }
-
-    return NextResponse.json({ conditions: results }, { status: 200 });
+    return NextResponse.json({ conditions: data ?? [] }, { status: 200 });
   } catch (err) {
     console.error('[api/admin/conditions] GET error:', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
@@ -97,7 +90,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return apiError(error, '[api/admin/conditions] POST');
     }
 
     return NextResponse.json({ success: true, condition: data }, { status: 201 });
@@ -141,7 +134,7 @@ export async function PATCH(request: NextRequest) {
       .single();
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return apiError(error, '[api/admin/conditions] PATCH');
     }
 
     return NextResponse.json({ success: true, condition: data }, { status: 200 });
@@ -170,7 +163,7 @@ export async function DELETE(request: NextRequest) {
     const { error } = await supabaseServer.from('conditions').delete().eq('id', id);
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return apiError(error, '[api/admin/conditions] DELETE');
     }
 
     return NextResponse.json({ success: true, message: 'Condition deleted' }, { status: 200 });

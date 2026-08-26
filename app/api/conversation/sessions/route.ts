@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { requireUser } from '@/lib/adminAuth';
+import { createUserClient } from '@/lib/supabaseClient';
 import { listUserConversations } from '@/lib/conversationEngine';
 
 /**
@@ -14,7 +15,7 @@ export async function GET(request: NextRequest) {
   const userId = userResult.user.id;
 
   try {
-    const conversations = await listUserConversations(userId);
+    const conversations = await listUserConversations(userId, createUserClient(request));
     return NextResponse.json({ conversations });
   } catch (err) {
     console.error('[api/conversation/sessions] GET error:', err);

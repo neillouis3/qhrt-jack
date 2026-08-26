@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { supabaseServer } from '@/lib/supabaseClient';
 import { requireAdmin } from '@/lib/adminAuth';
+import { apiError } from '@/lib/apiError';
 
 // ---------------------------------------------------------------------------
 // GET — list symptoms (optionally filtered by condition_id)
@@ -14,6 +15,7 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const conditionId = searchParams.get('conditionId');
+    const search = searchParams.get('search')?.trim() ?? '';
 
     let query = supabaseServer.from('condition_symptoms').select(`
         *,
@@ -23,13 +25,16 @@ export async function GET(request: NextRequest) {
     if (conditionId) {
       query = query.eq('condition_id', conditionId);
     }
+    if (search) {
+      query = query.ilike('symptom_name', `%${search}%`);
+    }
 
     query = query.order('display_order', { ascending: true });
 
     const { data, error } = await query;
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return apiError(error, '[api/admin/symptoms] GET');
     }
 
     return NextResponse.json({ symptoms: data ?? [] }, { status: 200 });
@@ -73,7 +78,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return apiError(error, '[api/admin/symptoms] POST');
     }
 
     return NextResponse.json({ success: true, symptom: data }, { status: 201 });
@@ -113,7 +118,7 @@ export async function PATCH(request: NextRequest) {
       .single();
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return apiError(error, '[api/admin/symptoms] PATCH');
     }
 
     return NextResponse.json({ success: true, symptom: data }, { status: 200 });
@@ -142,7 +147,7 @@ export async function DELETE(request: NextRequest) {
     const { error } = await supabaseServer.from('condition_symptoms').delete().eq('id', id);
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return apiError(error, '[api/admin/symptoms] DELETE');
     }
 
     return NextResponse.json({ success: true, message: 'Symptom deleted' }, { status: 200 });

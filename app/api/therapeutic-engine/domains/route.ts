@@ -6,7 +6,8 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { requireUser } from '@/lib/adminAuth';
-import { supabaseServer } from '@/lib/supabaseClient';
+import { createUserClient } from '@/lib/supabaseClient';
+import { apiError } from '@/lib/apiError';
 
 export async function GET(request: NextRequest) {
   const userResult = await requireUser(request);
@@ -14,14 +15,14 @@ export async function GET(request: NextRequest) {
   if (!userResult) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   try {
-    const { data, error } = await supabaseServer
+    const { data, error } = await createUserClient(request)
       .from('functional_domain_protocols')
       .select('*')
       .eq('is_active', true)
       .order('name', { ascending: true });
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return apiError(error, '[api/therapeutic-engine/domains] GET');
     }
 
     return NextResponse.json({ functional_domain_protocols: data ?? [] }, { status: 200 });

@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { supabaseServer } from '@/lib/supabaseClient';
+import { createUserClient } from '@/lib/supabaseClient';
 import { requireUser } from '@/lib/adminAuth';
+import { apiError } from '@/lib/apiError';
 
 /**
  * POST — save assessment results for a user's selected condition.
@@ -13,6 +14,7 @@ export async function POST(request: NextRequest) {
   if (!userResult) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const userId = userResult.user.id;
+  const db = createUserClient(request);
 
   try {
     const body = await request.json();
@@ -47,14 +49,13 @@ export async function POST(request: NextRequest) {
       answered_at: now,
     }));
 
-    const { data, error } = await supabaseServer.from('assessment_results').insert(insertRows)
-      .select(`
+    const { data, error } = await db.from('assessment_results').insert(insertRows).select(`
         *,
         assessment_questions (id, question_text, minimum_value, maximum_value)
       `);
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return apiError(error, '[api/user/assessment-results] POST');
     }
 
     return NextResponse.json({ success: true, results: data ?? [] }, { status: 201 });

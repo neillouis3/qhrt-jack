@@ -7,6 +7,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { requireUser } from '@/lib/adminAuth';
+import { createUserClient } from '@/lib/supabaseClient';
 import { initializeEngine } from '@/lib/therapeuticEngine';
 
 export async function POST(request: NextRequest) {
@@ -31,11 +32,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const result = await initializeEngine(userId, {
-      functional_domain_protocol_id,
-      aee_id,
-      personal_program_id,
-    });
+    const result = await initializeEngine(
+      userId,
+      {
+        functional_domain_protocol_id,
+        aee_id,
+        personal_program_id,
+      },
+      createUserClient(request)
+    );
 
     if (!result) {
       return NextResponse.json(

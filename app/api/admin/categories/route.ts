@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { supabaseServer } from '@/lib/supabaseClient';
 import { requireAdmin } from '@/lib/adminAuth';
+import { apiError } from '@/lib/apiError';
 
 // ---------------------------------------------------------------------------
 // GET — list categories with optional filtering
@@ -14,11 +15,15 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const activeOnly = searchParams.get('activeOnly') === 'true';
+    const search = searchParams.get('search')?.trim() ?? '';
 
     let query = supabaseServer.from('condition_categories').select('*');
 
     if (activeOnly) {
       query = query.eq('is_active', true);
+    }
+    if (search) {
+      query = query.ilike('name', `%${search}%`);
     }
 
     query = query.order('display_order', { ascending: true });
@@ -26,7 +31,7 @@ export async function GET(request: NextRequest) {
     const { data, error } = await query;
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return apiError(error, '[api/admin/categories] GET');
     }
 
     return NextResponse.json({ categories: data ?? [] }, { status: 200 });
@@ -67,7 +72,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return apiError(error, '[api/admin/categories] POST');
     }
 
     return NextResponse.json({ success: true, category: data }, { status: 201 });
@@ -109,7 +114,7 @@ export async function PATCH(request: NextRequest) {
       .single();
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return apiError(error, '[api/admin/categories] PATCH');
     }
 
     return NextResponse.json({ success: true, category: data }, { status: 200 });
@@ -138,7 +143,7 @@ export async function DELETE(request: NextRequest) {
     const { error } = await supabaseServer.from('condition_categories').delete().eq('id', id);
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return apiError(error, '[api/admin/categories] DELETE');
     }
 
     return NextResponse.json({ success: true, message: 'Category deleted' }, { status: 200 });

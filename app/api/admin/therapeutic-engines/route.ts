@@ -13,7 +13,15 @@ export async function GET(request: NextRequest) {
   if (authCheck) return authCheck;
 
   try {
-    const engines = await getAllEngines();
+    const search = new URL(request.url).searchParams.get('search')?.trim() ?? '';
+    let engines = await getAllEngines();
+
+    if (search) {
+      // No natural text column — filter by id (partial match)
+      const term = search.toLowerCase();
+      engines = engines.filter((e) => e.id.toLowerCase().includes(term));
+    }
+
     return NextResponse.json({ therapeutic_engines: engines }, { status: 200 });
   } catch (err) {
     console.error('[api/admin/therapeutic-engines] GET error:', err);
