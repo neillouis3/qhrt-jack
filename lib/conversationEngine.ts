@@ -239,11 +239,7 @@ export async function processResponse(
   // a branch rule fired — this ensures they're available for both navigation
   // and state computation immediately.
   const currentPromptInfo = km.prompts.find((p) => p.id === promptId);
-  const skippedIds = computeSkippedPrompts(
-    km,
-    answeredIds,
-    prevResponses ?? []
-  );
+  const skippedIds = computeSkippedPrompts(km, answeredIds, prevResponses ?? []);
 
   // 5. Update conversation current_prompt_id
   let resolvedNextPromptId = nextPromptId;
@@ -339,11 +335,7 @@ export async function getConversationState(
       answeredPromptIds.add(resp.prompt_id);
     }
   }
-  const skippedPromptIds = computeSkippedPrompts(
-    km,
-    answeredPromptIds,
-    responses ?? []
-  );
+  const skippedPromptIds = computeSkippedPrompts(km, answeredPromptIds, responses ?? []);
 
   // Evaluate dimension completion (skipped prompts count as satisfied)
   const completedDimensions = evaluateDimensionCompletion(km, answeredPromptKeys, skippedPromptIds);
@@ -388,7 +380,10 @@ export async function getConversationState(
 // ----------------------------------------------------------------------------
 // Complete a conversation explicitly
 // ----------------------------------------------------------------------------
-export async function completeConversation(conversationId: string, client?: SupabaseClient): Promise<{
+export async function completeConversation(
+  conversationId: string,
+  client?: SupabaseClient
+): Promise<{
   conversation: Conversation;
   evidenceRecords: EvidenceRecord[];
   dimensionSummary: DimensionCompletionState[];
@@ -440,7 +435,10 @@ export interface ConversationListItem extends Conversation {
   knowledge_model_name: string;
 }
 
-export async function listUserConversations(userId: string, client?: SupabaseClient): Promise<ConversationListItem[]> {
+export async function listUserConversations(
+  userId: string,
+  client?: SupabaseClient
+): Promise<ConversationListItem[]> {
   const db = client ?? supabaseServer;
   const { data, error } = await db
     .from('conversations')
@@ -461,7 +459,8 @@ export async function listUserConversations(userId: string, client?: SupabaseCli
   // Flatten the nested knowledge_models into knowledge_model_name
   return (data ?? []).map((conv: Record<string, unknown>) => ({
     ...conv,
-    knowledge_model_name: ((conv.knowledge_models as { name?: string })?.name ?? 'Unknown') as string,
+    knowledge_model_name: ((conv.knowledge_models as { name?: string })?.name ??
+      'Unknown') as string,
   })) as ConversationListItem[];
 }
 
@@ -472,7 +471,10 @@ export async function listUserConversations(userId: string, client?: SupabaseCli
 type LoadedKM = NonNullable<Awaited<ReturnType<typeof loadKnowledgeModel>>>;
 
 /** Load Knowledge Model for a conversation by resolving the knowledge_model_id */
-async function loadKnowledgeModelForConversation(conversationId: string, client?: SupabaseClient): Promise<LoadedKM | null> {
+async function loadKnowledgeModelForConversation(
+  conversationId: string,
+  client?: SupabaseClient
+): Promise<LoadedKM | null> {
   const db = client ?? supabaseServer;
   const { data: conv } = await db
     .from('conversations')
