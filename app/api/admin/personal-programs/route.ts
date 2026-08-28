@@ -7,6 +7,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { requireAdmin } from '@/lib/adminAuth';
 import { supabaseServer } from '@/lib/supabaseClient';
+import { apiError } from '@/lib/apiError';
 
 export async function GET(request: NextRequest) {
   const authCheck = await requireAdmin(request);
@@ -15,16 +16,20 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const activeOnly = searchParams.get('activeOnly') === 'true';
+    const search = searchParams.get('search')?.trim() ?? '';
 
     let query = supabaseServer.from('personal_implementation_programs').select('*');
     if (activeOnly) {
       query = query.eq('is_active', true);
     }
+    if (search) {
+      query = query.ilike('name', `%${search}%`);
+    }
     query = query.order('name', { ascending: true });
 
     const { data, error } = await query;
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return apiError(error, '[api/admin/personal-programs] GET');
     }
 
     return NextResponse.json({ personal_programs: data ?? [] }, { status: 200 });
@@ -63,7 +68,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return apiError(error, '[api/admin/personal-programs] POST');
     }
 
     return NextResponse.json({ success: true, program: data }, { status: 201 });

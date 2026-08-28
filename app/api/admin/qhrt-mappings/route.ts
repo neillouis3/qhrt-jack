@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { supabaseServer } from '@/lib/supabaseClient';
 import { requireAdmin } from '@/lib/adminAuth';
+import { apiError } from '@/lib/apiError';
 
 // ---------------------------------------------------------------------------
 // GET — list QHRT mappings (optionally filtered by condition_id)
@@ -14,6 +15,7 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const conditionId = searchParams.get('conditionId');
+    const search = searchParams.get('search')?.trim() ?? '';
 
     let query = supabaseServer.from('qhrt_mappings').select(`
         *,
@@ -23,11 +25,15 @@ export async function GET(request: NextRequest) {
     if (conditionId) {
       query = query.eq('condition_id', conditionId);
     }
+    if (search) {
+      // Search by linked condition name (embedded resource filter)
+      query = query.ilike('conditions.name', `%${search}%`);
+    }
 
     const { data, error } = await query;
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return apiError(error, '[api/admin/qhrt-mappings] GET');
     }
 
     return NextResponse.json({ mappings: data ?? [] }, { status: 200 });
@@ -88,7 +94,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return apiError(error, '[api/admin/qhrt-mappings] POST');
     }
 
     return NextResponse.json({ success: true, mapping: data }, { status: 201 });
@@ -133,7 +139,7 @@ export async function PATCH(request: NextRequest) {
       .single();
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return apiError(error, '[api/admin/qhrt-mappings] PATCH');
     }
 
     return NextResponse.json({ success: true, mapping: data }, { status: 200 });
@@ -162,7 +168,7 @@ export async function DELETE(request: NextRequest) {
     const { error } = await supabaseServer.from('qhrt_mappings').delete().eq('id', id);
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return apiError(error, '[api/admin/qhrt-mappings] DELETE');
     }
 
     return NextResponse.json({ success: true, message: 'QHRT mapping deleted' }, { status: 200 });

@@ -6,6 +6,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { requireUser } from '@/lib/adminAuth';
+import { createUserClient } from '@/lib/supabaseClient';
 import { getEngineSessionState, pauseEngine } from '@/lib/therapeuticEngine';
 
 export async function POST(
@@ -18,9 +19,10 @@ export async function POST(
 
   try {
     const { engineId } = await params;
+    const db = createUserClient(request);
 
-    // Verify ownership
-    const state = await getEngineSessionState(engineId);
+    // Verify ownership (RLS scopes to caller's own engines)
+    const state = await getEngineSessionState(engineId, db);
     if (!state) {
       return NextResponse.json({ error: 'Engine not found.' }, { status: 404 });
     }
@@ -29,7 +31,7 @@ export async function POST(
     }
 
     // Pause
-    const result = await pauseEngine(engineId);
+    const result = await pauseEngine(engineId, db);
     if (!result.success) {
       return NextResponse.json({ error: result.message }, { status: 400 });
     }

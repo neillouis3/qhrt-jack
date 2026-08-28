@@ -22,8 +22,10 @@ export default function Home() {
       return;
     }
 
+    const controller = new AbortController();
+
     // Check for selected conditions
-    fetch('/api/user/selected-conditions')
+    fetch('/api/user/selected-conditions', { signal: controller.signal })
       .then((res) => {
         if (!res.ok) throw new Error('Failed to fetch');
         return res.json();
@@ -37,7 +39,8 @@ export default function Home() {
           setShowSelection(true);
         }
       })
-      .catch(() => {
+      .catch((err) => {
+        if (err.name === 'AbortError') return;
         // If API doesn't exist yet (tables not created), fall back to intake check
         if (session.intakeCompleted) {
           setSelectionComplete(true);
@@ -49,6 +52,8 @@ export default function Home() {
       .finally(() => {
         setLoading(false);
       });
+
+    return () => controller.abort();
   }, [session, sessionLoading]);
 
   const handleSelectionComplete = () => {

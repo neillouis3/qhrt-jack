@@ -6,6 +6,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { requireUser } from '@/lib/adminAuth';
+import { createUserClient } from '@/lib/supabaseClient';
 import { getEngineSessionState, saveObservation } from '@/lib/therapeuticEngine';
 import type { SaveObservationRequest } from '@/lib/types/therapeutic-engine';
 
@@ -19,9 +20,10 @@ export async function POST(
 
   try {
     const { engineId } = await params;
+    const db = createUserClient(request);
 
-    // Verify ownership
-    const state = await getEngineSessionState(engineId);
+    // Verify ownership (RLS scopes to caller's own engines)
+    const state = await getEngineSessionState(engineId, db);
     if (!state) {
       return NextResponse.json({ error: 'Engine not found.' }, { status: 404 });
     }
@@ -42,7 +44,7 @@ export async function POST(
     };
 
     // Save observation
-    const result = await saveObservation(engineId, requestData);
+    const result = await saveObservation(engineId, requestData, db);
     if (!result.success) {
       return NextResponse.json({ error: result.message }, { status: 400 });
     }

@@ -42,51 +42,48 @@ export async function proxy(request: NextRequest) {
   const isUserRoute = pathname.startsWith('/home') || pathname.startsWith('/sessions');
   const isAuthRoute = pathname.startsWith('/auth');
 
-  // Protect admin routes
-  if (isAdminRoute) {
-    if (error || !user) {
-      return NextResponse.redirect(new URL('/auth/login', request.url));
-    }
+  const isAuthenticated = !error && !!user;
+  const needsRole =
+    (isAdminRoute && isAuthenticated) ||
+    (isUserRoute && isAuthenticated) ||
+    (isAuthRoute && isAuthenticated);
 
-    // Fetch role from public.user_roles table (server-side verified)
-    const { data: roleData, error: roleError } = await supabaseServer
+  // Fetch role from public.user_roles table (server-side verified) — at most once per request
+  let role: string | null = null;
+  if (needsRole && user) {
+    const { data: roleData } = await supabaseServer
       .from('user_roles')
       .select('role')
       .eq('user_id', user.id)
       .single();
+    role = roleData?.role ?? null;
+  }
 
-    if (roleError || !roleData?.role || roleData.role !== 'admin') {
+  // Protect admin routes
+  if (isAdminRoute) {
+    if (!isAuthenticated) {
+      return NextResponse.redirect(new URL('/auth/login', request.url));
+    }
+
+    if (role !== 'admin') {
       return NextResponse.redirect(new URL('/home', request.url));
     }
   }
 
   // Protect user routes
   if (isUserRoute) {
-    if (error || !user) {
+    if (!isAuthenticated) {
       return NextResponse.redirect(new URL('/auth/login', request.url));
     }
 
     // Admins get redirected to dashboard
-    const { data: roleData } = await supabaseServer
-      .from('user_roles')
-      .select('role')
-      .eq('user_id', user.id)
-      .single();
-
-    if (roleData?.role === 'admin') {
+    if (role === 'admin') {
       return NextResponse.redirect(new URL('/dashboard', request.url));
     }
   }
 
   // Redirect authenticated users away from auth pages
-  if (isAuthRoute && !error && user) {
-    const { data: roleData } = await supabaseServer
-      .from('user_roles')
-      .select('role')
-      .eq('user_id', user.id)
-      .single();
-
-    const role = roleData?.role ?? 'user';
+  if (isAuthRoute && isAuthenticated) {
     const redirectUrl = role === 'admin' ? '/dashboard' : '/home';
     return NextResponse.redirect(new URL(redirectUrl, request.url));
   }

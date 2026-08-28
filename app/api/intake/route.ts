@@ -1,9 +1,17 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { createServerClient } from '@supabase/ssr';
-import { supabaseServer } from '@/lib/supabaseClient';
+import { createUserClient } from '@/lib/supabaseClient';
+import { requireUser } from '@/lib/adminAuth';
 
 export async function POST(request: NextRequest) {
+  // Shared guard: authenticates the session AND enforces the CSRF origin check
+  // for this mutating request (defense-in-depth on top of SameSite=Lax cookies).
+  const userResult = await requireUser(request);
+  if (userResult instanceof NextResponse) return userResult;
+  if (!userResult) return NextResponse.json({ error: 'Invalid session' }, { status: 401 });
+
+  const userId = userResult.user.id;
+
   try {
     const {
       presentingConcern,
@@ -21,35 +29,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Please select a presenting concern' }, { status: 400 });
     }
 
-    // Verify session
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
+    // Upsert user_progress record (RLS-enforced to this user's row)
+    await createUserClient(request).from('user_progress').upsert(
       {
-        cookies: {
-          getAll() {
-            return request.cookies.getAll();
-          },
-          setAll() {
-            // No-op in GET - read only.
-          },
-        },
-      }
-    );
-
-    const {
-      data: { user },
-      error,
-    } = await supabase.auth.getUser();
-
-    if (error || !user) {
-      return NextResponse.json({ error: 'Invalid session' }, { status: 401 });
-    }
-
-    // Upsert user_progress record
-    await supabaseServer.from('user_progress').upsert(
-      {
-        user_id: user.id,
+        user_id: userId,
         intake_completed: true,
         presenting_concern: presentingConcern,
         presenting_concern_other: presentingConcernOther,

@@ -35,8 +35,12 @@ export default function NavbarLayout({ children }: NavbarLayoutProps) {
       clearSessionCache();
       invalidate();
       router.push('/');
-    } catch {
-      /* handle error */
+    } catch (err) {
+      // Even if the logout call fails, clear local state and navigate home.
+      console.error('[NavbarLayout] Logout request failed:', err);
+      clearSessionCache();
+      invalidate();
+      router.push('/');
     }
   };
 

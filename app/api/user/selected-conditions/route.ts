@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { supabaseServer } from '@/lib/supabaseClient';
+import { createUserClient } from '@/lib/supabaseClient';
 import { requireUser } from '@/lib/adminAuth';
+import { apiError } from '@/lib/apiError';
 
 /**
  * GET — list the authenticated user's selected conditions.
@@ -19,9 +20,10 @@ export async function GET(request: NextRequest) {
   if (!userResult) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const userId = userResult.user.id;
+  const db = createUserClient(request);
 
   try {
-    const { data, error } = await supabaseServer
+    const { data, error } = await db
       .from('user_selected_conditions')
       .select(
         `
@@ -40,7 +42,7 @@ export async function GET(request: NextRequest) {
       .order('date_selected', { ascending: false });
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return apiError(error, '[api/user/selected-conditions] GET');
     }
 
     return NextResponse.json({ selectedConditions: data ?? [] }, { status: 200 });
@@ -61,6 +63,7 @@ export async function POST(request: NextRequest) {
   if (!userResult) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const userId = userResult.user.id;
+  const db = createUserClient(request);
 
   try {
     const body = await request.json();
@@ -82,7 +85,7 @@ export async function POST(request: NextRequest) {
       date_selected: now,
     }));
 
-    const { data, error } = await supabaseServer
+    const { data, error } = await db
       .from('user_selected_conditions')
       .upsert(insertRows, { onConflict: 'user_id,condition_id' }).select(`
         *,
@@ -90,11 +93,11 @@ export async function POST(request: NextRequest) {
       `);
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return apiError(error, '[api/user/selected-conditions] POST');
     }
 
     // Mark intake as completed since user has selected conditions
-    await supabaseServer
+    await db
       .from('user_progress')
       .upsert(
         { user_id: userId, intake_completed: true, intake_date: now },
@@ -119,6 +122,7 @@ export async function PATCH(request: NextRequest) {
   if (!userResult) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const userId = userResult.user.id;
+  const db = createUserClient(request);
 
   try {
     const body = await request.json();
@@ -128,12 +132,12 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: 'id is required' }, { status: 400 });
     }
 
-    const update: Record<string, any> = {};
+    const update: Record<string, unknown> = {};
     if (is_active !== undefined) update.is_active = is_active;
     update.updated_at = new Date().toISOString();
 
     // Ensure user can only update their own selections
-    const { data, error } = await supabaseServer
+    const { data, error } = await db
       .from('user_selected_conditions')
       .update(update)
       .eq('id', id)
@@ -142,7 +146,7 @@ export async function PATCH(request: NextRequest) {
       .single();
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return apiError(error, '[api/user/selected-conditions] PATCH');
     }
 
     if (!data) {

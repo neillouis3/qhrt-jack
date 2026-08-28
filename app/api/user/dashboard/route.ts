@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { supabaseServer } from '@/lib/supabaseClient';
+import { createUserClient } from '@/lib/supabaseClient';
 import { requireUser } from '@/lib/adminAuth';
 
 /**
  * GET — returns all dashboard data for the authenticated user in one call.
- * Uses supabaseServer (secret key) to bypass RLS.
+ * Uses a per-user RLS-enforced client so Postgres scopes every row to auth.uid().
  */
 export async function GET(request: NextRequest) {
   const userResult = await requireUser(request);
@@ -13,12 +13,13 @@ export async function GET(request: NextRequest) {
   if (!userResult) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const userId = userResult.user.id;
+  const db = createUserClient(request);
 
   try {
     // Fetch all data in parallel
     const [progressRes, conditionsRes] = await Promise.all([
-      supabaseServer.from('user_progress').select('*').eq('user_id', userId).maybeSingle(),
-      supabaseServer
+      db.from('user_progress').select('*').eq('user_id', userId).maybeSingle(),
+      db
         .from('user_selected_conditions')
         .select(
           `
@@ -37,11 +38,11 @@ export async function GET(request: NextRequest) {
 
     // Fetch assessment results for each selected condition
     const conditions = conditionsRes.data ?? [];
-    const assessmentResultsMap: Record<string, any[]> = {};
+    const assessmentResultsMap: Record<string, unknown[]> = {};
 
     if (conditions.length > 0) {
-      const resultsPromises = conditions.map(async (cond: any) => {
-        const { data } = await supabaseServer
+      const resultsPromises = conditions.map(async (cond: { condition_id: string }) => {
+        const { data } = await db
           .from('assessment_results')
           .select(
             `

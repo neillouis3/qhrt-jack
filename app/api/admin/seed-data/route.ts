@@ -9,6 +9,11 @@ import { requireAdmin } from '@/lib/adminAuth';
  * and checks for existing condition names per category).
  */
 export async function POST(request: NextRequest) {
+  // Disable destructive seed/overwrite in production — safe to re-run in dev only.
+  if (process.env.NODE_ENV === 'production') {
+    return NextResponse.json({ error: 'Seed endpoint is disabled in production' }, { status: 403 });
+  }
+
   const authCheck = await requireAdmin(request);
   if (authCheck) return authCheck;
 
@@ -64,7 +69,7 @@ export async function POST(request: NextRequest) {
         .maybeSingle();
 
       if (existing) {
-        categoryMap[cat.name] = (existing as any).id;
+        categoryMap[cat.name] = (existing as { id: string }).id;
       } else {
         const { data, error } = await supabaseServer
           .from('condition_categories')
@@ -81,7 +86,7 @@ export async function POST(request: NextRequest) {
           console.error(`[seed] Error creating category ${cat.name}:`, error);
           continue;
         }
-        categoryMap[cat.name] = (data as any).id;
+        categoryMap[cat.name] = (data as { id: string }).id;
       }
     }
 
@@ -165,8 +170,7 @@ export async function POST(request: NextRequest) {
     let created = 0;
     let skipped = 0;
 
-    for (let i = 0; i < conditions.length; i++) {
-      const { name, categoryName } = conditions[i];
+    for (const { name, categoryName } of conditions) {
       const categoryId = categoryMap[categoryName];
 
       if (!categoryId) {
@@ -191,7 +195,7 @@ export async function POST(request: NextRequest) {
       const { error } = await supabaseServer.from('conditions').insert({
         name,
         category_id: categoryId,
-        display_order: i + 1,
+        display_order: created + skipped + 1,
         is_active: true,
         is_featured: false,
       });

@@ -31,17 +31,21 @@ export default function UserMenu({ items, initialName, initialEmail }: UserMenuP
   const displayName = initialName
     ? initialName.split('@')[0]
     : (initialEmail?.split('@')[0] ?? 'User');
+  const safeDisplayName = displayName ?? 'User';
 
   return (
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen(!open)}
         className="flex items-center gap-2 rounded-full border border-border px-3 py-1.5 text-sm text-foreground hover:bg-muted/5 dark:hover:bg-navy-light/20 transition-colors"
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-label="User menu"
       >
         <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center text-white text-xs font-medium dark:bg-primary-light">
-          {displayName.charAt(0).toUpperCase()}
+          {safeDisplayName.charAt(0).toUpperCase()}
         </div>
-        <span className="text-foreground dark:text-muted hidden sm:inline">{displayName}</span>
+        <span className="text-foreground dark:text-muted hidden sm:inline">{safeDisplayName}</span>
         <svg
           className={`w-4 h-4 text-muted transition-transform ${open ? 'rotate-180' : ''}`}
           fill="none"
@@ -54,10 +58,15 @@ export default function UserMenu({ items, initialName, initialEmail }: UserMenuP
       </button>
 
       {open && (
-        <div className="absolute right-0 mt-1 w-48 rounded-lg border border-border bg-background shadow-lg py-1 z-50">
+        <div
+          role="menu"
+          aria-label="User menu"
+          className="absolute right-0 mt-1 w-48 rounded-lg border border-border bg-background shadow-lg py-1 z-50"
+        >
           {items.map((item, i) => (
             <button
               key={i}
+              role="menuitem"
               onClick={() => {
                 item.onClick();
                 setOpen(false);

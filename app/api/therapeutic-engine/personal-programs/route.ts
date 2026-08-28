@@ -6,7 +6,8 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { requireUser } from '@/lib/adminAuth';
-import { supabaseServer } from '@/lib/supabaseClient';
+import { createUserClient } from '@/lib/supabaseClient';
+import { apiError } from '@/lib/apiError';
 
 export async function GET(request: NextRequest) {
   const userResult = await requireUser(request);
@@ -17,7 +18,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const functionalDomainId = searchParams.get('functionalDomainId');
 
-    let query = supabaseServer
+    let query = createUserClient(request)
       .from('personal_implementation_programs')
       .select('*')
       .eq('is_active', true)
@@ -30,7 +31,7 @@ export async function GET(request: NextRequest) {
     const { data, error } = await query;
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return apiError(error, '[api/therapeutic-engine/personal-programs] GET');
     }
 
     return NextResponse.json({ personal_programs: data ?? [] }, { status: 200 });

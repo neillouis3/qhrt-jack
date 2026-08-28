@@ -2,8 +2,20 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { supabaseServer } from '@/lib/supabaseClient';
+import { rateLimit } from '@/lib/rateLimiter';
 
 export async function POST(request: NextRequest) {
+  // Rate limit auth attempts per IP to mitigate credential-stuffing / brute force.
+  const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown';
+  const rl = await rateLimit(ip, 'auth');
+  if (!rl.success) {
+    const retryAfter = rl.reset ? Math.max(0, Math.ceil((rl.reset - Date.now()) / 1000)) : 60;
+    return NextResponse.json(
+      { error: 'Too many attempts — please try again shortly' },
+      { status: 429, headers: { 'Retry-After': String(retryAfter) } }
+    );
+  }
+
   try {
     const { email, password } = await request.json();
 
@@ -41,7 +53,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 401 });
+      return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 });
     }
 
     // Fetch role from public.user_roles table using the user's UUID

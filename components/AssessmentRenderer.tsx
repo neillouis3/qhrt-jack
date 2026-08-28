@@ -35,11 +35,13 @@ function ScaleInput({
   max,
   value,
   onChange,
+  label,
 }: {
   min: number;
   max: number;
   value: number | null;
   onChange: (v: number) => void;
+  label?: string;
 }) {
   return (
     <div className="flex items-center gap-4">
@@ -50,6 +52,7 @@ function ScaleInput({
         max={max}
         value={value ?? min}
         onChange={(e) => onChange(Number(e.target.value))}
+        aria-label={label ? `${label} (scale ${min} to ${max})` : `Scale from ${min} to ${max}`}
         className="flex-1 accent-primary"
       />
       <span className="text-sm text-muted w-6 text-center">{max}</span>
@@ -74,19 +77,22 @@ export default function AssessmentRenderer({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch condition details (includes assessment questions)
+  // Fetch condition details (includes assessment questions) — abort on unmount
   useEffect(() => {
-    fetch(`/api/conditions/${conditionId}`)
+    const controller = new AbortController();
+    fetch(`/api/conditions/${conditionId}`, { signal: controller.signal })
       .then((res) => res.json())
       .then((data) => {
         const qs = data.condition?.assessment_questions ?? [];
         setQuestions(qs);
         setLoading(false);
       })
-      .catch(() => {
+      .catch((err) => {
+        if (err.name === 'AbortError') return;
         setError('Failed to load assessment questions.');
         setLoading(false);
       });
+    return () => controller.abort();
   }, [conditionId]);
 
   const handleAnswer = useCallback((questionId: string, value: number) => {
@@ -185,6 +191,7 @@ export default function AssessmentRenderer({
               max={q.maximum_value}
               value={answers[q.id] ?? null}
               onChange={(v) => handleAnswer(q.id, v)}
+              label={q.question_text}
             />
           </div>
         ))}

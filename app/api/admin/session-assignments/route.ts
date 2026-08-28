@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { supabaseServer } from '@/lib/supabaseClient';
 import { requireAdmin } from '@/lib/adminAuth';
+import { apiError } from '@/lib/apiError';
 
 // ---------------------------------------------------------------------------
 // GET — list session assignments (optionally filtered by condition_id)
@@ -14,6 +15,7 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const conditionId = searchParams.get('conditionId');
+    const search = searchParams.get('search')?.trim() ?? '';
 
     let query = supabaseServer.from('condition_session_assignments').select(`
         *,
@@ -23,13 +25,17 @@ export async function GET(request: NextRequest) {
     if (conditionId) {
       query = query.eq('condition_id', conditionId);
     }
+    if (search) {
+      // Search by linked condition name (embedded resource filter)
+      query = query.ilike('conditions.name', `%${search}%`);
+    }
 
     query = query.order('display_order', { ascending: true });
 
     const { data, error } = await query;
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return apiError(error, '[api/admin/session-assignments] GET');
     }
 
     return NextResponse.json({ assignments: data ?? [] }, { status: 200 });
@@ -77,7 +83,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return apiError(error, '[api/admin/session-assignments] POST');
     }
 
     return NextResponse.json({ success: true, assignment: data }, { status: 201 });
@@ -119,7 +125,7 @@ export async function PATCH(request: NextRequest) {
       .single();
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return apiError(error, '[api/admin/session-assignments] PATCH');
     }
 
     return NextResponse.json({ success: true, assignment: data }, { status: 200 });
@@ -151,7 +157,7 @@ export async function DELETE(request: NextRequest) {
       .eq('id', id);
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return apiError(error, '[api/admin/session-assignments] DELETE');
     }
 
     return NextResponse.json(

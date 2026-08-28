@@ -159,12 +159,13 @@ export interface EvidenceRecord {
 // Knowledge Model (Full — with nested data)
 // ----------------------------------------------------------------------------
 export interface KnowledgeModelFull {
-  model: KnowledgeModel;
+  /** The model row itself. `null` when only the nested data is loaded (see loadKnowledgeModel). */
+  model: KnowledgeModel | null;
   dimensions: EvidenceDimension[];
   prompts: Prompt[];
-  responseOptions: Record<string, PromptResponseOption[]>; // keyed by prompt_id
-  branchRules: Record<string, BranchRule[]>; // keyed by prompt_id
-  completionRules: Record<string, CompletionRule[]>; // keyed by dimension_id
+  responseOptions: Map<string, PromptResponseOption[]>; // keyed by prompt_id
+  branchRules: Map<string, BranchRule[]>; // keyed by prompt_id
+  completionRules: Map<string, CompletionRule[]>; // keyed by dimension_id
   evidenceFields: EvidenceField[];
 }
 

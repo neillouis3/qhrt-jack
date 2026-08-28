@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { supabaseServer } from '@/lib/supabaseClient';
+import { apiError } from '@/lib/apiError';
 
 /**
  * Public endpoint — returns a single condition with its symptoms and assessment questions.
@@ -38,7 +39,7 @@ export async function GET(
       .order('display_order', { ascending: true });
 
     if (sympError) {
-      return NextResponse.json({ error: sympError.message }, { status: 500 });
+      return apiError(sympError, '[api/conditions/:id] symptoms');
     }
 
     // Fetch active assessment questions for this condition
@@ -50,7 +51,7 @@ export async function GET(
       .order('display_order', { ascending: true });
 
     if (qError) {
-      return NextResponse.json({ error: qError.message }, { status: 500 });
+      return apiError(qError, '[api/conditions/:id] questions');
     }
 
     // Fetch progress metrics for this condition
@@ -62,7 +63,7 @@ export async function GET(
       .order('display_order', { ascending: true });
 
     if (mError) {
-      return NextResponse.json({ error: mError.message }, { status: 500 });
+      return apiError(mError, '[api/conditions/:id] metrics');
     }
 
     return NextResponse.json(

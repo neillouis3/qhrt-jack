@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { requireUser } from '@/lib/adminAuth';
-import { supabaseServer } from '@/lib/supabaseClient';
+import { createUserClient } from '@/lib/supabaseClient';
 import { completeConversation } from '@/lib/conversationEngine';
 
 /**
@@ -17,10 +17,11 @@ export async function POST(
 
   const userId = userResult.user.id;
   const { sessionId } = await params;
+  const db = createUserClient(request);
 
   try {
-    // Verify ownership
-    const { data: conversation, error: convError } = await supabaseServer
+    // Verify ownership (RLS scopes this to the caller's own conversations)
+    const { data: conversation, error: convError } = await db
       .from('conversations')
       .select('id, user_id')
       .eq('id', sessionId)
@@ -34,7 +35,7 @@ export async function POST(
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const result = await completeConversation(sessionId);
+    const result = await completeConversation(sessionId, db);
 
     if (!result) {
       return NextResponse.json({ error: 'Failed to complete conversation' }, { status: 500 });

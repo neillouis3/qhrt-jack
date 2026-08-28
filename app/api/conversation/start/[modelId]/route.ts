@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { requireUser } from '@/lib/adminAuth';
+import { createUserClient } from '@/lib/supabaseClient';
 import { startConversation } from '@/lib/conversationEngine';
 
 /**
@@ -34,7 +35,7 @@ export async function POST(
       return NextResponse.json({ error: 'knowledge_model_id is required' }, { status: 400 });
     }
 
-    const result = await startConversation(userId, knowledgeModelId);
+    const result = await startConversation(userId, knowledgeModelId, createUserClient(request));
 
     if (!result) {
       return NextResponse.json(

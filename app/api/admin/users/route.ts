@@ -1,62 +1,9 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { createServerClient } from '@supabase/ssr';
 import { supabaseServer } from '@/lib/supabaseClient';
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-async function requireAdmin(request: NextRequest): Promise<null | NextResponse> {
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll();
-        },
-        setAll() {
-          // No-op - read only.
-        },
-      },
-    }
-  );
-
-  const {
-    data: { user },
-    error,
-  } = await supabase.auth.getUser();
-
-  if (error || !user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
-  const { data: roleData, error: roleError } = await supabaseServer
-    .from('user_roles')
-    .select('role')
-    .eq('user_id', user.id)
-    .maybeSingle();
-
-  if (roleError || !roleData?.role || roleData.role !== 'admin') {
-    return NextResponse.json({ error: 'Forbidden — admin access required' }, { status: 403 });
-  }
-
-  return null; // no error
-}
-
-/**
- * Build a Supabase query chain for user_roles, applying optional filters.
- */
-function buildRolesQuery(
-  q: ReturnType<typeof supabaseServer.from>,
-  filters: { search?: string; role?: string; intake?: string }
-) {
-  if (filters.role && filters.role !== 'all') {
-    q = q.eq('role', filters.role);
-  }
-  return q;
-}
+import { requireAdmin } from '@/lib/adminAuth';
+import { apiError } from '@/lib/apiError';
+import { rateLimit } from '@/lib/rateLimiter';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -81,7 +28,9 @@ export async function GET(request: NextRequest) {
 
   try {
     const { searchParams } = new URL(request.url);
-    const limit = Math.min(parseInt(searchParams.get('limit') ?? '10', 10) || 10, 100);
+    // Cap at 1000 — the admin users page fetches the full dataset client-side
+    // (limit=1000) and filters/sorts/paginates in the browser.
+    const limit = Math.min(parseInt(searchParams.get('limit') ?? '10', 10) || 10, 1000);
     const page = parseInt(searchParams.get('page') ?? '1', 10) || 1;
     const offset = (page - 1) * limit;
     const search = searchParams.get('search') ?? '';
@@ -96,7 +45,7 @@ export async function GET(request: NextRequest) {
       .select('user_id, role');
 
     if (rolesErr) {
-      return NextResponse.json({ error: rolesErr.message }, { status: 500 });
+      return apiError(rolesErr, '[api/admin/users] GET roles');
     }
 
     // 2. Fetch ALL auth users (admin API — needed for email search)
@@ -107,7 +56,7 @@ export async function GET(request: NextRequest) {
 
     // Build a lookup map for auth info
     const authMap: Record<string, { email: string; created_at: string }> = {};
-    for (const u of allAuthUsers as any[]) {
+    for (const u of allAuthUsers as Array<{ id: string; email?: string; created_at?: string }>) {
       authMap[u.id] = {
         email: u.email ?? '',
         created_at: u.created_at ?? new Date().toISOString(),
@@ -225,7 +174,7 @@ export async function PATCH(request: NextRequest) {
       .eq('user_id', userId);
 
     if (updateErr) {
-      return NextResponse.json({ error: updateErr.message }, { status: 500 });
+      return apiError(updateErr, '[api/admin/users] PATCH');
     }
 
     return NextResponse.json(
@@ -258,7 +207,7 @@ export async function DELETE(request: NextRequest) {
     // Delete from auth (cascades via trigger ideally, but we clean up manually too)
     const { error: authErr } = await supabaseServer.auth.admin.deleteUser(userId);
     if (authErr) {
-      return NextResponse.json({ error: authErr.message }, { status: 500 });
+      return apiError(authErr, '[api/admin/users] DELETE');
     }
 
     // Clean up related rows
@@ -282,6 +231,17 @@ export async function POST(request: NextRequest) {
   const authCheck = await requireAdmin(request);
   if (authCheck) return authCheck;
 
+  // Rate-limit password-reset requests (abuse vector: spamming recovery emails).
+  const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown';
+  const rl = await rateLimit(ip, 'auth');
+  if (!rl.success) {
+    const retryAfter = rl.reset ? Math.max(1, Math.ceil((rl.reset - Date.now()) / 1000)) : 60;
+    return NextResponse.json(
+      { error: 'Too many requests. Please try again later.' },
+      { status: 429, headers: { 'Retry-After': String(retryAfter) } }
+    );
+  }
+
   try {
     const body = await request.json();
     const { userId } = body as { userId: string };
@@ -297,14 +257,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    // Send password-reset email
+    // Send password-reset email (Supabase "recovery" link = password reset)
     const { error: resetErr } = await supabaseServer.auth.admin.generateLink({
-      type: 'password_reset',
+      type: 'recovery',
       email: userData.user.email,
     });
 
     if (resetErr) {
-      return NextResponse.json({ error: resetErr.message }, { status: 500 });
+      return apiError(resetErr, '[api/admin/users] POST reset');
     }
 
     return NextResponse.json(

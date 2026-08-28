@@ -1,18 +1,7 @@
-'use client';
-
 import Link from 'next/link';
-import { useSession } from '@/hooks/useSession';
+import LandingCta from '@/components/LandingCta';
 
 export default function LandingPage() {
-  const { session } = useSession();
-  const user = session
-    ? {
-        name: session.user.email ?? 'User',
-        email: session.user.email ?? '',
-        role: session.role ?? 'user',
-      }
-    : null;
-
   return (
     <div className="flex flex-col flex-1">
       {/* Hero Section */}
@@ -39,31 +28,7 @@ export default function LandingPage() {
             your well-being — accessible anytime, from anywhere.
           </p>
 
-          <div className="mt-10 flex flex-col gap-4 sm:flex-row sm:justify-center">
-            {user !== null ? (
-              <Link
-                href="/home"
-                className="inline-flex h-12 items-center justify-center gap-2 rounded-lg bg-primary px-8 text-sm font-semibold text-white shadow-sm shadow-primary/20 transition-all duration-200 hover:bg-primary-dark hover:shadow-md hover:shadow-primary/30 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 dark:bg-primary-light dark:hover:bg-primary"
-              >
-                Go to your dashboard
-              </Link>
-            ) : (
-              <>
-                <Link
-                  href="/auth/login"
-                  className="inline-flex h-12 items-center justify-center gap-2 rounded-lg bg-primary px-8 text-sm font-semibold text-white shadow-sm shadow-primary/20 transition-all duration-200 hover:bg-primary-dark hover:shadow-md hover:shadow-primary/30 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 dark:bg-primary-light dark:hover:bg-primary"
-                >
-                  Get started
-                </Link>
-                <Link
-                  href="/auth/login"
-                  className="inline-flex h-12 items-center justify-center gap-2 rounded-lg border border-border bg-white px-8 text-sm font-semibold text-navy-light transition-all duration-200 hover:border-muted hover:bg-muted/5 focus:outline-none focus:ring-2 focus:ring-muted focus:ring-offset-2 dark:border-navy dark:bg-navy dark:text-muted dark:hover:border-muted dark:hover:bg-navy-light/20"
-                >
-                  Learn more
-                </Link>
-              </>
-            )}
-          </div>
+          <LandingCta />
 
           {/* Trust indicators */}
           <div className="mt-16 flex flex-wrap items-center justify-center gap-x-8 gap-y-4 text-sm text-muted">
@@ -74,6 +39,7 @@ export default function LandingPage() {
                 viewBox="0 0 24 24"
                 stroke="currentColor"
                 strokeWidth={1.5}
+                aria-hidden="true"
               >
                 <path
                   strokeLinecap="round"
@@ -90,6 +56,7 @@ export default function LandingPage() {
                 viewBox="0 0 24 24"
                 stroke="currentColor"
                 strokeWidth={1.5}
+                aria-hidden="true"
               >
                 <path
                   strokeLinecap="round"
@@ -106,6 +73,7 @@ export default function LandingPage() {
                 viewBox="0 0 24 24"
                 stroke="currentColor"
                 strokeWidth={1.5}
+                aria-hidden="true"
               >
                 <path
                   strokeLinecap="round"
@@ -145,6 +113,7 @@ export default function LandingPage() {
                     viewBox="0 0 24 24"
                     stroke="currentColor"
                     strokeWidth={1.2}
+                    aria-hidden="true"
                   >
                     <path
                       strokeLinecap="round"
@@ -166,6 +135,7 @@ export default function LandingPage() {
                     viewBox="0 0 24 24"
                     stroke="currentColor"
                     strokeWidth={1.2}
+                    aria-hidden="true"
                   >
                     <path
                       strokeLinecap="round"
@@ -187,6 +157,7 @@ export default function LandingPage() {
                     viewBox="0 0 24 24"
                     stroke="currentColor"
                     strokeWidth={1.2}
+                    aria-hidden="true"
                   >
                     <path
                       strokeLinecap="round"
@@ -220,7 +191,7 @@ export default function LandingPage() {
               Why choose QHRT
             </h2>
             <p className="mt-4 text-lg text-muted">
-              We've built a platform that puts your well-being first.
+              We&apos;ve built a platform that puts your well-being first.
             </p>
           </div>
 

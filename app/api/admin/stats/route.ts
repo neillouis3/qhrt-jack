@@ -1,60 +1,12 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { createServerClient } from '@supabase/ssr';
 import { supabaseServer } from '@/lib/supabaseClient';
-
-// Helpers
-/**
- * Verify the requester is authenticated AND has an admin role.
- * Returns the user object on success or a 401/403 response on failure.
- */
-async function requireAdmin(
-  request: NextRequest
-): Promise<
-  ReturnType<typeof supabaseServer>['auth']['getUser'] extends any ? any : never | NextResponse
-> {
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll();
-        },
-        setAll() {
-          // No-op - read only in this context.
-        },
-      },
-    }
-  );
-
-  const {
-    data: { user },
-    error,
-  } = await supabase.auth.getUser();
-
-  if (error || !user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
-  // Check role via server client (bypasses RLS)
-  const { data: roleData, error: roleError } = await supabaseServer
-    .from('user_roles')
-    .select('role')
-    .eq('user_id', user.id)
-    .maybeSingle();
-
-  if (roleError || !roleData?.role || roleData.role !== 'admin') {
-    return NextResponse.json({ error: 'Forbidden — admin access required' }, { status: 403 });
-  }
-
-  return user;
-}
+import { requireAdmin } from '@/lib/adminAuth';
 
 // GET - aggregate stats
 export async function GET(request: NextRequest) {
-  const authResult = await requireAdmin(request);
-  if (authResult instanceof NextResponse) return authResult; // unauthorized / forbidden
+  const authCheck = await requireAdmin(request);
+  if (authCheck) return authCheck; // unauthorized / forbidden
 
   try {
     // ---- Parallelize ALL independent queries --------------------------------

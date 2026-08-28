@@ -104,7 +104,7 @@ export default function IntakeForm({ onComplete, onCancel }: IntakeFormProps) {
 
       {/* Step title */}
       <h3 className="text-lg font-semibold text-foreground dark:text-white mb-1">
-        {steps[step].title}
+        {steps[step]?.title}
       </h3>
 
       {/* Step content */}
@@ -167,6 +167,7 @@ export default function IntakeForm({ onComplete, onCancel }: IntakeFormProps) {
                     max={10}
                     value={data[key] ?? 5}
                     onChange={(e) => update({ [key]: Number(e.target.value) })}
+                    aria-label={`${label} (scale 1 to 10)`}
                     className="w-full accent-primary"
                   />
                   <div className="flex justify-between text-xs text-muted mt-0.5">

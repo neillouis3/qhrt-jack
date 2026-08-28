@@ -1,20 +1,19 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import Modal from '@/components/Modal';
 import ConversationView from '@/components/conversation/ConversationView';
 import TherapeuticSessionView from '@/components/therapeutic/TherapeuticSessionView';
+import type { KnowledgeModel } from '@/lib/types/conversation';
+import type {
+  FunctionalDomainProtocol,
+  ArchetypalEmotionalEnergetic,
+  PersonalImplementationProgram,
+} from '@/lib/types/therapeutic-engine';
 
 // ---------------------------------------------------------------------------
-// Types
+// Types (join/projection shapes not covered by the shared entity types)
 // ---------------------------------------------------------------------------
-
-interface KnowledgeModel {
-  id: string;
-  name: string;
-  description: string | null;
-  version: string;
-}
 
 interface UserConversation {
   id: string;
@@ -23,28 +22,6 @@ interface UserConversation {
   status: string;
   started_at: string;
   completed_at: string | null;
-}
-
-interface FunctionalDomainProtocol {
-  id: string;
-  name: string;
-  description: string | null;
-  is_active: boolean;
-}
-
-interface ArchetypalEmotionalEnergetic {
-  id: string;
-  name: string;
-  description: string | null;
-  is_active: boolean;
-}
-
-interface PersonalImplementationProgram {
-  id: string;
-  functional_domain_id: string | null;
-  name: string;
-  description: string | null;
-  is_active: boolean;
 }
 
 interface TherapeuticEngineSession {
@@ -232,8 +209,12 @@ export default function Sessions() {
   };
 
   // Filter personal programs by selected domain
-  const filteredPrograms = personalPrograms.filter(
-    (p) => !selectedDomainId || p.functional_domain_id === selectedDomainId
+  const filteredPrograms = useMemo(
+    () =>
+      personalPrograms.filter(
+        (p) => !selectedDomainId || p.functional_domain_id === selectedDomainId
+      ),
+    [personalPrograms, selectedDomainId]
   );
 
   // ---------------------------------------------------------------------------
@@ -540,7 +521,7 @@ export default function Sessions() {
       >
         <div className="flex flex-col gap-4">
           <p className="text-sm text-muted dark:text-gray-400">
-            Choose what you'd like to focus on and we'll guide you through the process.
+            Choose what you&apos;d like to focus on and we&apos;ll guide you through the process.
           </p>
 
           {/* Functional Domain Selection */}

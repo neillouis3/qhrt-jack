@@ -1,12 +1,8 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { requireUser } from '@/lib/adminAuth';
-import { supabaseServer } from '@/lib/supabaseClient';
-import {
-  processResponse,
-  loadKnowledgeModel,
-  getConversationState,
-} from '@/lib/conversationEngine';
+import { createUserClient } from '@/lib/supabaseClient';
+import { processResponse } from '@/lib/conversationEngine';
 
 /**
  * POST — Submit a response and receive the next prompt.
@@ -22,10 +18,11 @@ export async function POST(
 
   const userId = userResult.user.id;
   const { sessionId } = await params;
+  const db = createUserClient(request);
 
   try {
-    // Verify ownership
-    const { data: conversation, error: convError } = await supabaseServer
+    // Verify ownership (RLS scopes this to the caller's own conversations)
+    const { data: conversation, error: convError } = await db
       .from('conversations')
       .select('id, knowledge_model_id, user_id, status')
       .eq('id', sessionId)
@@ -56,7 +53,7 @@ export async function POST(
       );
     }
 
-    const state = await processResponse(sessionId, prompt_id, response_value);
+    const state = await processResponse(sessionId, prompt_id, response_value, db);
 
     if (!state) {
       return NextResponse.json({ error: 'Failed to process response' }, { status: 500 });
